@@ -19,6 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import bdd
+from scraper import PROGRESO, muy_pronto
 import plataformas
 
 RAIZ = Path(__file__).parent
@@ -33,9 +34,9 @@ PLATAFORMAS = {
         "publicar": True,
         "modos": {
             "rapido": {"etiqueta": "Actualizar (rápido)", "comando": ["scraper.py", "buscar"],
-                       "ayuda": "Solo las tarjetas de las ofertas: unos minutos."},
-            "completo": {"etiqueta": "Actualizar con requisitos", "comando": ["scraper.py", "buscar", "--detalle"],
-                         "ayuda": "Abre cada oferta para leer requisitos: puede tardar más de una hora y reanuda si la sesión caduca."},
+                       "ayuda": "Recomendado: solo las tarjetas de las ofertas, con pausas largas. Una vez cada 12 horas como máximo."},
+            "completo": {"etiqueta": "Actualizar con requisitos (lento)", "comando": ["scraper.py", "buscar", "--detalle"],
+                         "ayuda": "Abre cada oferta nueva para leer requisitos: muchas más peticiones al portal. Úsalo poco; reanuda si la sesión caduca."},
         },
     },
 }
@@ -64,6 +65,11 @@ def chrome_listo() -> bool:
             return r.status == 200
     except OSError:
         return False
+
+
+def scraper_progreso_pendiente() -> bool:
+    """Hay una descarga interrumpida que se puede reanudar (no cuenta como descarga nueva)."""
+    return PROGRESO.exists()
 
 
 def en_curso() -> bool:
@@ -121,7 +127,7 @@ def iniciar(plataforma: str, pasos: list[tuple[str, list[str]]]) -> None:
     hilo.start()
 
 
-def actualizar(plataforma: str, modo: str) -> tuple[bool, str]:
+def actualizar(plataforma: str, modo: str, forzar: bool = False) -> tuple[bool, str] | tuple[bool, str, bool]:
     conf = PLATAFORMAS.get(plataforma)
     if not conf or modo not in conf["modos"]:
         return False, "Plataforma o modo desconocido."
@@ -131,7 +137,15 @@ def actualizar(plataforma: str, modo: str) -> tuple[bool, str]:
         if conf["necesita_chrome"] and not chrome_listo():
             return False, "No encuentro el Chrome del scraper. Pulsa «Abrir Chrome», inicia sesión en Encuentra Empleo y vuelve a intentarlo."
         m = conf["modos"][modo]
-        pasos = [(f"{plataforma}: {m['etiqueta']}", m["comando"])]
+        comando = list(m["comando"])
+        if conf.get("necesita_chrome"):
+            # Encuentra Empleo bloquea IP con muchas peticiones: se pide confirmar si la última descarga es reciente
+            aviso = None if scraper_progreso_pendiente() else muy_pronto()
+            if aviso and not forzar:
+                return False, aviso + " ¿Actualizar de todas formas?", True
+            if aviso:
+                comando.append("--forzar")
+        pasos = [(f"{plataforma}: {m['etiqueta']}", comando)]
         if conf.get("publicar"):
             pasos.append(PUBLICAR)
         iniciar(plataforma, pasos)
@@ -223,7 +237,8 @@ class Manejador(BaseHTTPRequestHandler):
         largo = int(self.headers.get("Content-Length") or 0)
         datos = json.loads(self.rfile.read(largo) or b"{}")
         acciones = {
-            "/api/actualizar": lambda: actualizar(datos.get("plataforma", ""), datos.get("modo", "rapido")),
+            "/api/actualizar": lambda: actualizar(datos.get("plataforma", ""), datos.get("modo", "rapido"),
+                                                  bool(datos.get("forzar"))),
             "/api/detener": detener,
             "/api/publicar": publicar,
             "/api/actualizar-otras": actualizar_otras,
@@ -232,8 +247,8 @@ class Manejador(BaseHTTPRequestHandler):
         if self.path not in acciones:
             self._json({"ok": False, "mensaje": "No encontrado"}, 404)
             return
-        ok, mensaje = acciones[self.path]()
-        self._json({"ok": ok, "mensaje": mensaje}, 200 if ok else 409)
+        ok, mensaje, *confirmar = acciones[self.path]()
+        self._json({"ok": ok, "mensaje": mensaje, "confirmar": bool(confirmar and confirmar[0])}, 200 if ok else 409)
 
     def log_message(self, *args) -> None:  # silencioso
         pass

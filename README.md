@@ -72,7 +72,11 @@ Al terminar cada actualización, las ofertas de TI se publican solas en la
    python scraper.py buscar --detalle                           # todas las áreas, con requisitos
    python scraper.py buscar --areas informatica --detalle       # solo áreas que contengan "informatica"
    python scraper.py buscar --palabras python datos --provincia pichincha
+   python scraper.py buscar --forzar                            # aunque la última descarga sea de hace < 12 h
    ```
+
+   Si el portal deja de cargar desde tu conexión, probablemente limitó tu IP por exceso de peticiones: espera unas
+   horas sin usar el scraper.
 
    El resultado queda en `salida/ofertas_AAAAMMDD_HHMM.xlsx`, y cada descarga se guarda sola en la base
    `salida/ofertas.db` con su registro de actualización (estado `ok`, o `parcial` si se cortó).
@@ -131,7 +135,11 @@ requests con reglas para otras áreas.
 
 - Úsalo con **tu propia cuenta** y para tu búsqueda de empleo. Si publicas ofertas, publica solo un resumen con el
   código y envía a la gente a postular en el portal oficial, como hace `publicar_sitio.py`.
-- El scraper hace **pausas aleatorias** entre peticiones y entre áreas para no sobrecargar el portal; no las quites.
+- El scraper hace **pausas aleatorias largas** (3-6 s entre peticiones, 20-40 s cada 10-20 ofertas, 15-30 s entre
+  áreas) y **no descarga si la última descarga fue hace menos de 12 horas** (salvo `--forzar`, o el panel te pide
+  confirmar). El portal limita o bloquea temporalmente las IP con muchas peticiones: no quites estas protecciones.
+- Usa el modo **rápido** (sin `--detalle`) para el día a día: `--detalle` abre cada oferta nueva y hace muchas más
+  peticiones.
 - Las ofertas pertenecen al portal y a los empleadores; verifica siempre la información y postula en el sitio oficial.
 - Este proyecto no está afiliado al Ministerio del Trabajo.
 

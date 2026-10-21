@@ -119,6 +119,16 @@ def registrar(plataforma: str, ofertas: list[dict], estado: str = "ok", inicio: 
     return {"plataforma": plataforma, "total": len(ofertas), "nuevas": nuevas, "estado": estado}
 
 
+def horas_desde_ultima(plataforma: str) -> float | None:
+    """Horas desde la última actualización terminada (ok o parcial) de la plataforma; None si nunca se actualizó."""
+    with conectar() as con:
+        fila = con.execute("""SELECT fin FROM actualizaciones WHERE plataforma = ? AND estado IN ('ok', 'parcial')
+                              AND fin IS NOT NULL ORDER BY fin DESC LIMIT 1""", (plataforma,)).fetchone()
+    if not fila:
+        return None
+    return (datetime.now() - datetime.fromisoformat(fila["fin"])).total_seconds() / 3600
+
+
 def estado() -> list[dict]:
     """Última actualización y conteos de cada plataforma."""
     with conectar() as con:

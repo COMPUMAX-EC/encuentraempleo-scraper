@@ -39,10 +39,13 @@ CACHE_DETALLE = DATOS / "cache_detalle.json"  # detalle por código de oferta, p
 PROGRESO = DATOS / "progreso.json"  # áreas terminadas y ofertas de una descarga interrumpida
 
 # Pausas aleatorias (segundos): tras cada petición, cada cierto número de ofertas y entre áreas.
-PAUSA_PETICION = (1.0, 2.5)
-PAUSA_LARGA = (8.0, 15.0)
-OFERTAS_ENTRE_PAUSAS_LARGAS = (15, 30)
-PAUSA_ENTRE_AREAS = (5.0, 10.0)
+# Pausas generosas: el portal limita o bloquea temporalmente las IP con muchas peticiones (oct 2026).
+PAUSA_PETICION = (3.0, 6.0)
+PAUSA_LARGA = (20.0, 40.0)
+OFERTAS_ENTRE_PAUSAS_LARGAS = (10, 20)
+PAUSA_ENTRE_AREAS = (15.0, 30.0)
+# Entre una descarga y la siguiente deben pasar al menos estas horas (se puede forzar con --forzar).
+HORAS_ENTRE_DESCARGAS = 12
 
 SEL_AREA = "FormSearch:areaLaboral_input"
 SEL_PROVINCIA = "FormSearch:provincia_input"
@@ -347,6 +350,21 @@ def registrar_descarga(ofertas: list[dict], filtros: dict, completo: bool, inici
         print(f"No se pudo guardar en la base ({e}); el Excel y el JSON sí se guardaron.")
 
 
+def muy_pronto() -> str | None:
+    """Aviso si la última descarga fue hace menos de HORAS_ENTRE_DESCARGAS; None si se puede descargar.
+
+    Reanudar una descarga interrumpida no cuenta como una nueva (eso se decide antes de llamar a esta función)."""
+    try:
+        horas = bdd.horas_desde_ultima("Encuentra Empleo")
+    except Exception:  # noqa: BLE001 - sin base no se bloquea la descarga
+        return None
+    if horas is None or horas >= HORAS_ENTRE_DESCARGAS:
+        return None
+    faltan = HORAS_ENTRE_DESCARGAS - horas
+    return (f"La última descarga fue hace {horas:.1f} h. Para no sobrecargar el portal (bloquea temporalmente las IP "
+            f"con muchas peticiones), espera {faltan:.1f} h más, o usa --forzar si de verdad lo necesitas.")
+
+
 def cmd_areas(page: Page) -> None:
     for v, t in elegir(opciones(page, SEL_AREA), None):
         print(f"{v:>10}  {t}")
@@ -430,7 +448,10 @@ def main() -> None:
     b.add_argument("--palabras", nargs="+", help="solo ofertas cuyo cargo/actividades contengan alguna")
     b.add_argument("--provincia", help="nombre de provincia, ej. pichincha")
     b.add_argument("--detalle", action="store_true",
-                   help="abre cada oferta para leer requisitos (instrucción, experiencia, conocimientos...); más lento")
+                   help="abre cada oferta para leer requisitos (instrucción, experiencia, conocimientos...); más lento"
+                        " y muchas más peticiones al portal: úsalo con moderación")
+    b.add_argument("--forzar", action="store_true",
+                   help=f"descarga aunque hayan pasado menos de {HORAS_ENTRE_DESCARGAS} horas desde la última")
     c =sub.add_parser("clasificar", help="reclasifica por sector un JSON ya descargado (no necesita Chrome)")
     c.add_argument("archivo", type=Path)
     args = parser.parse_args()
@@ -438,6 +459,11 @@ def main() -> None:
     if args.comando == "clasificar":
         guardar(json.loads(args.archivo.read_text(encoding="utf-8")), base=args.archivo.stem)
         return
+
+    if args.comando == "buscar" and not args.forzar and not PROGRESO.exists():
+        espera = muy_pronto()
+        if espera:
+            sys.exit(espera)
 
     # La sesión caducada se maneja fuera del bloque de Playwright para que cierre limpio.
     try:

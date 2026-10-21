@@ -102,7 +102,10 @@ function aviso(texto, ok) {
 
 async function post(ruta, cuerpo) {
   const r = await fetch(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo || {}) });
-  const d = await r.json(); aviso(d.mensaje, d.ok); refrescar();
+  const d = await r.json();
+  // La última descarga de Encuentra Empleo es reciente: solo se fuerza si el usuario lo confirma
+  if (d.confirmar && confirm(d.mensaje)) return post(ruta, { ...cuerpo, forzar: true });
+  aviso(d.mensaje, d.ok); refrescar();
 }
 
 function pintar(d) {
