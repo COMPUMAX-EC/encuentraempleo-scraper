@@ -38,7 +38,21 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Uso
+## Uso rápido: el panel
+
+Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre en tu navegador un panel local
+(`http://127.0.0.1:8765`, solo accesible desde tu computador) con:
+
+- la **última actualización** de cada plataforma (fecha, estado, ofertas leídas, nuevas y de TI en la base);
+- **Abrir Chrome**, para iniciar sesión en Encuentra Empleo;
+- **Actualizar** (rápido, o con requisitos), con el avance en vivo y la opción de detener;
+- **Publicar en la página** y el **historial** de actualizaciones.
+
+Al terminar cada actualización, las ofertas de TI se publican solas en la
+[página de Oportunidades de Computación UPEC](https://v0-student-orcin.vercel.app/oportunidades) (ver
+[Publicar en una página web](#publicar-en-una-página-web)).
+
+## Uso por comandos
 
 1. **Abre Chrome para el scraper** (usa un perfil aparte, no toca tu Chrome normal):
 
@@ -75,6 +89,21 @@ pip install -r requirements.txt
    python scraper.py clasificar salida/datos/ofertas_AAAAMMDD_HHMM.json
    ```
 
+## Publicar en una página web
+
+`publicar_sitio.py` exporta un **resumen** de las ofertas *TI directo* (cargo, empresa, ubicación, remuneración,
+cierre, sector y código; los requisitos completos se quedan en tu base) al JSON
+`lib/data/encuentra-empleo-jobs.json` de un repositorio de Next.js, abre un pull request y lo fusiona cuando pasa el
+check de Vercel. Si las ofertas no cambiaron, no hace nada.
+
+```powershell
+python publicar_sitio.py                  # exporta y publica (necesita git y la CLI de GitHub, gh)
+python publicar_sitio.py --solo-exportar  # solo escribe el JSON
+```
+
+El repositorio del sitio se indica con la variable `SITIO_REPO` (por defecto `../student`). Para tu propio sitio,
+cambia `DESTINO` y la forma del JSON en `exportar()`.
+
 ## Adapta la clasificación a tu perfil
 
 Las reglas están en [`sectores.py`](sectores.py): expresiones regulares sobre el texto normalizado (sin tildes, en
@@ -83,8 +112,8 @@ requests con reglas para otras áreas.
 
 ## Uso responsable
 
-- Úsalo con **tu propia cuenta** y para tu búsqueda de empleo. No compartas ni publiques datos descargados que solo
-  se ven con sesión iniciada.
+- Úsalo con **tu propia cuenta** y para tu búsqueda de empleo. Si publicas ofertas, publica solo un resumen con el
+  código y envía a la gente a postular en el portal oficial, como hace `publicar_sitio.py`.
 - El scraper hace **pausas aleatorias** entre peticiones y entre áreas para no sobrecargar el portal; no las quites.
 - Las ofertas pertenecen al portal y a los empleadores; verifica siempre la información y postula en el sitio oficial.
 - Este proyecto no está afiliado al Ministerio del Trabajo.
@@ -97,6 +126,9 @@ requests con reglas para otras áreas.
 | `sectores.py` | Clasificación por sector, perfil TI, postulabilidad y región amazónica |
 | `excel.py` | Genera el Excel con resumen y hojas por perfil |
 | `bdd.py` | Base SQLite con todas las ofertas y el registro de actualizaciones |
+| `panel.py`, `panel.html` | Panel local con el botón de actualizar y la última actualización |
+| `publicar_sitio.py` | Publica el resumen de ofertas de TI en un sitio web (PR con fusión automática) |
+| `Actualizar ofertas.bat` | Abre el panel con doble clic |
 | `abrir_chrome.ps1` | Abre Chrome con un perfil propio y el puerto de depuración 9222 |
 
 ## Hoja de ruta
@@ -105,7 +137,8 @@ requests con reglas para otras áreas.
 - [x] Clasificación por sector y perfil TI
 - [x] Base de datos con registro de la última actualización
 - [x] Guardar en la base automáticamente al terminar cada descarga
-- [ ] Botón para actualizar con un clic
+- [x] Botón para actualizar con un clic
+- [x] Publicación automática en la página de Oportunidades
 - [ ] Otras plataformas en la misma base (INEC, CNT, concursos públicos, bancos, empresas de software)
 
 ## Licencia

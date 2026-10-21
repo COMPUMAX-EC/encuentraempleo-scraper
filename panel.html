@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de ofertas</title>
+<style>
+  :root {
+    --bg: #f5f7f6; --card: #ffffff; --text: #1f2933; --muted: #5f6b76; --line: #dde3e0;
+    --accent: #1b5e3b; --accent-text: #ffffff; --ok: #1e7d4f; --warn: #a15c00; --err: #b42318;
+    --chip-ok: #e3f4ea; --chip-warn: #fff3d6; --chip-err: #fde8e6; --log: #0f1720; --log-text: #d6e2dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111715; --card: #1a2220; --text: #e6ece9; --muted: #9aa8a2; --line: #2b3633;
+      --accent: #4caf7d; --accent-text: #0d1512; --chip-ok: #173527; --chip-warn: #3a2d10; --chip-err: #3d1b18; --log: #0a0f0d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .fila { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  h2 { margin: 0; font-size: 1.15rem; }
+  .desc { color: var(--muted); margin: 4px 0 12px; font-size: .92rem; }
+  .datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+  .dato { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .dato b { display: block; font-size: 1.25rem; }
+  .dato span { color: var(--muted); font-size: .82rem; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .82rem; font-weight: 600; }
+  .chip.ok { background: var(--chip-ok); color: var(--ok); }
+  .chip.parcial, .chip.encurso { background: var(--chip-warn); color: var(--warn); }
+  .chip.error, .chip.no { background: var(--chip-err); color: var(--err); }
+  button { font: inherit; border-radius: 10px; padding: 9px 14px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+  button.primario { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .botones { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ayuda { color: var(--muted); font-size: .82rem; margin-top: 6px; }
+  .aviso { padding: 10px 12px; border-radius: 10px; margin-bottom: 16px; display: none; }
+  .aviso.ok { display: block; background: var(--chip-ok); color: var(--ok); }
+  .aviso.err { display: block; background: var(--chip-err); color: var(--err); }
+  pre { background: var(--log); color: var(--log-text); border-radius: 10px; padding: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: .82rem; margin: 10px 0 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .tabla { overflow-x: auto; }
+  .nada { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Panel de ofertas laborales</h1>
+  <p class="sub">Actualiza la base local de ofertas con un clic. <span id="actualizado"></span></p>
+  <div id="aviso" class="aviso" role="status"></div>
+
+  <section class="card">
+    <div class="fila">
+      <div><h2>Chrome del scraper</h2><p class="desc" id="chrome-desc">Comprobando…</p></div>
+      <div class="botones"><span id="chrome-chip" class="chip">…</span><button id="abrir-chrome">Abrir Chrome</button></div>
+    </div>
+  </section>
+
+  <div id="plataformas"></div>
+
+  <section class="card">
+    <div class="fila">
+      <div><h2>Página de Oportunidades</h2><p class="desc">Al terminar cada actualización, las ofertas de TI se publican solas en el sitio de Computación UPEC (un PR que se fusiona cuando pasa el check de Vercel). Usa este botón para publicar a mano lo que ya está en la base.</p></div>
+      <div class="botones"><button id="publicar">Publicar en la página</button></div>
+    </div>
+  </section>
+
+  <section class="card" id="tarea" hidden>
+    <div class="fila"><h2 id="tarea-titulo">Actualización</h2><button id="detener">Detener</button></div>
+    <pre id="registro"></pre>
+  </section>
+
+  <section class="card">
+    <h2>Historial de actualizaciones</h2>
+    <div class="tabla"><table>
+      <thead><tr><th>Plataforma</th><th>Fecha</th><th>Estado</th><th>Leídas</th><th>Nuevas</th><th>Detalle</th></tr></thead>
+      <tbody id="historial"></tbody>
+    </table></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const fecha = (iso) => iso ? new Date(iso).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" }) : "—";
+const chip = (estado) => `<span class="chip ${estado === "en curso" ? "encurso" : estado}">${estado}</span>`;
+const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+function aviso(texto, ok) {
+  const el = $("aviso"); el.textContent = texto; el.className = "aviso " + (ok ? "ok" : "err");
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => (el.className = "aviso"), 8000);
+}
+
+async function post(ruta, cuerpo) {
+  const r = await fetch(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo || {}) });
+  const d = await r.json(); aviso(d.mensaje, d.ok); refrescar();
+}
+
+function pintar(d) {
+  $("actualizado").textContent = "Revisado: " + new Date().toLocaleTimeString("es-EC");
+  $("chrome-chip").outerHTML = `<span id="chrome-chip" class="chip ${d.chrome ? "ok" : "no"}">${d.chrome ? "Abierto" : "Cerrado"}</span>`;
+  $("chrome-desc").textContent = d.chrome
+    ? "Listo. Asegúrate de tener la sesión iniciada en Encuentra Empleo."
+    : "Ábrelo e inicia sesión a mano en Encuentra Empleo antes de actualizar.";
+
+  $("plataformas").innerHTML = d.plataformas.map((p) => {
+    const u = p.ultima;
+    const datos = u ? `
+      <div class="datos">
+        <div class="dato"><b>${fecha(u.fin || u.inicio)}</b><span>Última actualización</span></div>
+        <div class="dato"><b>${chip(u.estado)}</b><span>Estado</span></div>
+        <div class="dato"><b>${u.total}</b><span>Leídas (${u.nuevas} nuevas)</span></div>
+        <div class="dato"><b>${u.en_base}</b><span>En la base (${u.de_ti} de TI)</span></div>
+      </div>` : `<p class="nada">Aún no hay actualizaciones de esta plataforma.</p>`;
+    const botones = p.modos.map((m, i) => `
+      <div><button class="${i === 0 ? "primario" : ""}" data-plataforma="${esc(p.nombre)}" data-modo="${m.id}" ${d.en_curso ? "disabled" : ""}>${esc(m.etiqueta)}</button>
+      <div class="ayuda">${esc(m.ayuda)}</div></div>`).join("");
+    return `<section class="card"><h2>${esc(p.nombre)}</h2><p class="desc">${esc(p.descripcion)}</p>${datos}<div class="botones">${botones}</div></section>`;
+  }).join("");
+  document.querySelectorAll("[data-modo]").forEach((b) =>
+    b.addEventListener("click", () => post("/api/actualizar", { plataforma: b.dataset.plataforma, modo: b.dataset.modo })));
+
+  const hayRegistro = d.registro.length > 0;
+  $("tarea").hidden = !hayRegistro;
+  $("tarea-titulo").textContent = d.en_curso ? `Actualizando ${d.tarea.plataforma}…` : "Última ejecución";
+  $("detener").disabled = !d.en_curso;
+  $("publicar").disabled = d.en_curso;
+  const pre = $("registro"); const abajo = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
+  pre.textContent = d.registro.join("\n"); if (abajo) pre.scrollTop = pre.scrollHeight;
+
+  $("historial").innerHTML = d.historial.length ? d.historial.map((h) => `
+    <tr><td>${esc(h.plataforma)}</td><td>${fecha(h.fin || h.inicio)}</td><td>${chip(h.estado)}</td>
+    <td>${h.total ?? 0}</td><td>${h.nuevas ?? 0}</td><td>${esc(h.mensaje)}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="nada">Sin actualizaciones todavía.</td></tr>`;
+  clearTimeout(pintar.t); pintar.t = setTimeout(refrescar, d.en_curso ? 2000 : 10000);
+}
+
+async function refrescar() {
+  try { pintar(await (await fetch("/api/estado")).json()); }
+  catch { aviso("El panel no responde: ¿se cerró la ventana de panel.py?", false); clearTimeout(pintar.t); pintar.t = setTimeout(refrescar, 5000); }
+}
+$("abrir-chrome").addEventListener("click", () => post("/api/abrir-chrome"));
+$("detener").addEventListener("click", () => post("/api/detener"));
+$("publicar").addEventListener("click", () => post("/api/publicar"));
+refrescar();
+</script>
+</body>
+</html>
