@@ -45,6 +45,22 @@
   th { color: var(--muted); font-weight: 600; }
   .tabla { overflow-x: auto; }
   .nada { color: var(--muted); }
+  .eleccion { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; margin: 12px 0; }
+  .eleccion label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer; }
+  .eleccion input { margin-top: 3px; accent-color: var(--accent); }
+  .eleccion small { display: block; color: var(--muted); font-size: .78rem; }
+  .enlaces { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: .88rem; }
+  .enlaces button { padding: 4px 8px; }
+  select { font: inherit; border-radius: 10px; padding: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  .barra { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 10px 0 4px; }
+  .barra > div { height: 100%; background: var(--accent); transition: width .4s; }
+  .pasos { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+  .pasos li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .pasos .det { color: var(--muted); font-size: .8rem; grid-column: 2 / 4; overflow-wrap: anywhere; }
+  .pasos .hora { color: var(--muted); font-size: .8rem; }
+  .chip.pendiente, .chip.omitido, .chip.cancelado { background: var(--line); color: var(--muted); }
+  .chip.listo { background: var(--chip-ok); color: var(--ok); }
+  details summary { cursor: pointer; color: var(--muted); margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -60,11 +76,21 @@
     </div>
   </section>
 
+  <section class="card" id="tarea" hidden>
+    <div class="fila"><h2 id="tarea-titulo">Actualización</h2><button id="detener">Detener</button></div>
+    <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="barra-wrap"><div id="barra" style="width:0%"></div></div>
+    <p class="desc" id="avance"></p>
+    <ul class="pasos" id="pasos"></ul>
+    <details id="det-registro"><summary>Ver el registro completo</summary><pre id="registro"></pre></details>
+  </section>
+
   <section class="card">
-    <div class="fila">
-      <div><h2>Todas las demás plataformas</h2><p class="desc">INEC, CNT, concursos públicos, Petroecuador, CELEC, bancos y cooperativas, empresas de software y empresas remotas. No necesitan Chrome: tardan menos de un minuto.</p></div>
-      <div class="botones"><button id="actualizar-otras" class="primario">Actualizar todas</button></div>
-    </div>
+    <h2>Elige qué actualizar</h2>
+    <p class="desc">Marca las plataformas y pulsa «Actualizar seleccionadas»: se actualizan una por una y arriba ves el avance de cada una. Encuentra Empleo necesita el Chrome con sesión y no conviene más de una vez cada 12 horas.</p>
+    <div class="enlaces"><button type="button" id="marcar-todas">Todas sin Chrome</button><button type="button" id="marcar-ninguna">Ninguna</button>
+      <label>Encuentra Empleo: <select id="modo-ee"><option value="rapido">rápido (recomendado)</option><option value="completo">con requisitos (lento)</option></select></label></div>
+    <div class="eleccion" id="eleccion"></div>
+    <div class="botones"><button id="actualizar-seleccion" class="primario">Actualizar seleccionadas</button></div>
   </section>
 
   <div id="plataformas"></div>
@@ -76,10 +102,6 @@
     </div>
   </section>
 
-  <section class="card" id="tarea" hidden>
-    <div class="fila"><h2 id="tarea-titulo">Actualización</h2><button id="detener">Detener</button></div>
-    <pre id="registro"></pre>
-  </section>
 
   <section class="card">
     <h2>Historial de actualizaciones</h2>
@@ -108,6 +130,53 @@ async function post(ruta, cuerpo) {
   aviso(d.mensaje, d.ok); refrescar();
 }
 
+// Plataformas elegidas: se recuerdan en este navegador (si el almacenamiento falla, se usan las de por defecto)
+let elegidas = null;
+function cargarEleccion(nombres, sinChrome) {
+  if (elegidas) return;
+  try { const g = JSON.parse(localStorage.getItem("panel-eleccion") || "null"); if (Array.isArray(g)) elegidas = new Set(g.filter((n) => nombres.includes(n))); } catch {}
+  if (!elegidas) elegidas = new Set(sinChrome);
+}
+function guardarEleccion() { try { localStorage.setItem("panel-eleccion", JSON.stringify([...elegidas])); } catch {} }
+
+function pintarEleccion(d) {
+  const nombres = d.plataformas.map((p) => p.nombre);
+  const sinChrome = d.plataformas.filter((p) => !p.necesita_chrome).map((p) => p.nombre);
+  cargarEleccion(nombres, sinChrome);
+  const cont = $("eleccion");
+  if (!cont.dataset.listo) {
+    cont.innerHTML = d.plataformas.map((p) => `<label><input type="checkbox" value="${esc(p.nombre)}" ${elegidas.has(p.nombre) ? "checked" : ""}>
+      <span>${esc(p.nombre)}<small>${p.necesita_chrome ? "Necesita Chrome con sesión" : "Sin Chrome · segundos"}</small></span></label>`).join("");
+    cont.querySelectorAll("input").forEach((i) => i.addEventListener("change", () => { i.checked ? elegidas.add(i.value) : elegidas.delete(i.value); guardarEleccion(); }));
+    $("marcar-todas").onclick = () => { elegidas = new Set(sinChrome); guardarEleccion(); cont.querySelectorAll("input").forEach((i) => (i.checked = elegidas.has(i.value))); };
+    $("marcar-ninguna").onclick = () => { elegidas = new Set(); guardarEleccion(); cont.querySelectorAll("input").forEach((i) => (i.checked = false)); };
+    cont.dataset.listo = "1";
+  }
+  cont.querySelectorAll("input").forEach((i) => (i.disabled = d.en_curso));
+  $("actualizar-seleccion").disabled = d.en_curso;
+}
+
+const ESTADOS = { "pendiente": "en cola", "en curso": "actualizando", "listo": "listo", "error": "error", "omitido": "omitido", "cancelado": "cancelado" };
+function duracion(p) {
+  if (!p.inicio) return "";
+  const s = Math.max(0, Math.round(((p.fin ? new Date(p.fin) : new Date()) - new Date(p.inicio)) / 1000));
+  return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
+}
+function pintarAvance(d) {
+  const pasos = d.tarea.pasos || [];
+  const hechos = pasos.filter((p) => !["pendiente", "en curso"].includes(p.estado)).length;
+  const pct = pasos.length ? Math.round((hechos / pasos.length) * 100) : 0;
+  $("barra").style.width = pct + "%";
+  $("barra-wrap").setAttribute("aria-valuenow", pct);
+  const errores = pasos.filter((p) => p.estado === "error").length;
+  $("avance").textContent = pasos.length ? `${hechos} de ${pasos.length} pasos terminados${errores ? ` · ${errores} con error` : ""}` : "";
+  $("pasos").innerHTML = pasos.map((p) => {
+    const clase = p.estado === "en curso" ? "encurso" : p.estado;
+    const det = p.detalle && p.estado !== "pendiente" ? `<span class="det">${esc(p.detalle)}</span>` : "";
+    return `<li><span class="chip ${clase}">${ESTADOS[p.estado] || p.estado}</span><span>${esc(p.etiqueta)}</span><span class="hora">${duracion(p)}</span>${det}</li>`;
+  }).join("");
+}
+
 function pintar(d) {
   $("actualizado").textContent = "Revisado: " + new Date().toLocaleTimeString("es-EC");
   $("chrome-chip").outerHTML = `<span id="chrome-chip" class="chip ${d.chrome ? "ok" : "no"}">${d.chrome ? "Abierto" : "Cerrado"}</span>`;
@@ -127,17 +196,21 @@ function pintar(d) {
     const botones = p.modos.map((m, i) => `
       <div><button class="${i === 0 ? "primario" : ""}" data-plataforma="${esc(p.nombre)}" data-modo="${m.id}" ${d.en_curso ? "disabled" : ""}>${esc(m.etiqueta)}</button>
       <div class="ayuda">${esc(m.ayuda)}</div></div>`).join("");
-    return `<section class="card"><h2>${esc(p.nombre)}</h2><p class="desc">${esc(p.descripcion)}</p>${datos}<div class="botones">${botones}</div></section>`;
+    const paso = d.en_curso ? (d.tarea.pasos || []).find((x) => x.nombre === p.nombre) : null;
+    const vivo = paso && ["pendiente", "en curso"].includes(paso.estado)
+      ? ` <span class="chip ${paso.estado === "en curso" ? "encurso" : "pendiente"}">${paso.estado === "en curso" ? "Actualizando…" : "En cola"}</span>` : "";
+    return `<section class="card"><h2>${esc(p.nombre)}${vivo}</h2><p class="desc">${esc(p.descripcion)}</p>${datos}<div class="botones">${botones}</div></section>`;
   }).join("");
   document.querySelectorAll("[data-modo]").forEach((b) =>
     b.addEventListener("click", () => post("/api/actualizar", { plataforma: b.dataset.plataforma, modo: b.dataset.modo })));
 
-  const hayRegistro = d.registro.length > 0;
+  pintarEleccion(d);
+  pintarAvance(d);
+  const hayRegistro = d.registro.length > 0 || (d.tarea.pasos || []).length > 0;
   $("tarea").hidden = !hayRegistro;
-  $("tarea-titulo").textContent = d.en_curso ? `Actualizando ${d.tarea.plataforma}…` : "Última ejecución";
+  $("tarea-titulo").textContent = d.en_curso ? `Actualizando ${d.tarea.plataforma}…` : `Última ejecución: ${d.tarea.plataforma || ""}`;
   $("detener").disabled = !d.en_curso;
   $("publicar").disabled = d.en_curso;
-  $("actualizar-otras").disabled = d.en_curso;
   const pre = $("registro"); const abajo = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
   pre.textContent = d.registro.join("\n"); if (abajo) pre.scrollTop = pre.scrollHeight;
 
@@ -155,7 +228,10 @@ async function refrescar() {
 $("abrir-chrome").addEventListener("click", () => post("/api/abrir-chrome"));
 $("detener").addEventListener("click", () => post("/api/detener"));
 $("publicar").addEventListener("click", () => post("/api/publicar"));
-$("actualizar-otras").addEventListener("click", () => post("/api/actualizar-otras"));
+$("actualizar-seleccion").addEventListener("click", () => {
+  if (!elegidas || !elegidas.size) return aviso("Marca al menos una plataforma.", false);
+  post("/api/actualizar-seleccion", { plataformas: [...elegidas], modo: $("modo-ee").value });
+});
 refrescar();
 </script>
 </body>

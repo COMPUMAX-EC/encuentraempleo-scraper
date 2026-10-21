@@ -46,8 +46,11 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre en tu 
 - la **última actualización** de cada plataforma (fecha, estado, ofertas leídas, nuevas y de TI en la base);
 - **Abrir Chrome**, para iniciar sesión en Encuentra Empleo;
 - **Actualizar** (rápido, o con requisitos), con el avance en vivo y la opción de detener;
-- **Actualizar todas** las demás plataformas (no necesitan Chrome: INEC, CNT, concursos públicos, Petroecuador,
-  CELEC, bancos y cooperativas, empresas de software y empresas remotas), o cada una con su botón;
+- **Elige qué actualizar**: marca las plataformas (INEC, CNT, concursos públicos, Petroecuador, CELEC, bancos y
+  cooperativas, empresas de software, empresas remotas y, si quieres, Encuentra Empleo) y pulsa «Actualizar
+  seleccionadas»; o usa el botón de cada plataforma;
+- el **avance en vivo**: barra de progreso, estado de cada plataforma (en cola, actualizando, listo, error), su
+  duración y su resultado, y el registro completo;
 - **Publicar en la página** y el **historial** de actualizaciones.
 
 Al terminar cada actualización, las ofertas de TI se publican solas en la
