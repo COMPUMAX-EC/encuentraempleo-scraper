@@ -58,13 +58,14 @@ pip install -r requirements.txt
    python scraper.py buscar --palabras python datos --provincia pichincha
    ```
 
-   El resultado queda en `salida/ofertas_AAAAMMDD_HHMM.xlsx`.
+   El resultado queda en `salida/ofertas_AAAAMMDD_HHMM.xlsx`, y cada descarga se guarda sola en la base
+   `salida/ofertas.db` con su registro de actualización (estado `ok`, o `parcial` si se cortó).
 
-4. **Base de datos y última actualización**:
+4. **Última actualización y conteos**:
 
    ```powershell
-   python bdd.py importar salida/datos/ofertas_AAAAMMDD_HHMM.json   # carga una descarga en la base
    python bdd.py estado                                              # última actualización y conteos
+   python bdd.py importar salida/datos/ofertas_AAAAMMDD_HHMM.json   # carga una descarga anterior en la base
    ```
 
 5. **Reclasificar** una descarga sin volver a entrar al portal (por ejemplo, después de mejorar las reglas de
@@ -103,7 +104,7 @@ requests con reglas para otras áreas.
 - [x] Descarga por áreas con reanudación
 - [x] Clasificación por sector y perfil TI
 - [x] Base de datos con registro de la última actualización
-- [ ] Guardar en la base automáticamente al terminar cada descarga
+- [x] Guardar en la base automáticamente al terminar cada descarga
 - [ ] Botón para actualizar con un clic
 - [ ] Otras plataformas en la misma base (INEC, CNT, concursos públicos, bancos, empresas de software)
 

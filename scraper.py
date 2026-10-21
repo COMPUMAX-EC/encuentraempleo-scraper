@@ -24,6 +24,7 @@ from pathlib import Path
 
 from playwright.sync_api import Page, sync_playwright
 
+import bdd
 from excel import exportar_excel
 from sectores import amazonia, clasificar, normalizar, perfil_ti, postulable_ti
 
@@ -331,6 +332,21 @@ def guardar(ofertas: list[dict], base: str | None = None) -> None:
     print(f"\n{len(ofertas)} ofertas guardadas en salida/{ruta_xlsx.name}")
 
 
+def registrar_descarga(ofertas: list[dict], filtros: dict, completo: bool, inicio: str,
+                       areas_hechas: int, areas_total: int) -> None:
+    """Guarda la descarga en la base (salida/ofertas.db) y deja el registro de la actualización.
+
+    Si la base falla, el Excel y el JSON ya están guardados: solo se avisa."""
+    usados = {k: v for k, v in filtros.items() if v}
+    mensaje = f"Áreas {areas_hechas}/{areas_total}" + (f" · filtros: {usados}" if usados else "")
+    try:
+        r = bdd.registrar("Encuentra Empleo", ofertas, estado="ok" if completo else "parcial",
+                          inicio=inicio, mensaje=mensaje)
+        print(f"Base de datos: {r['total']} ofertas, {r['nuevas']} nuevas · actualización {r['estado']} registrada")
+    except Exception as e:  # noqa: BLE001 - la descarga ya quedó en disco
+        print(f"No se pudo guardar en la base ({e}); el Excel y el JSON sí se guardaron.")
+
+
 def cmd_areas(page: Page) -> None:
     for v, t in elegir(opciones(page, SEL_AREA), None):
         print(f"{v:>10}  {t}")
@@ -349,6 +365,7 @@ def cmd_buscar(page: Page, args) -> None:
         provincia_id = provs[0][0]
         print(f"Provincia: {provs[0][1]}")
 
+    inicio = bdd.ahora()
     cache = cargar_cache()
     # Reanudación: si una ejecución anterior con los mismos filtros se cortó (p. ej. por sesión
     # caducada), se recuperan sus ofertas y se saltan las áreas que ya terminó.
@@ -398,7 +415,9 @@ def cmd_buscar(page: Page, args) -> None:
             PROGRESO.unlink(missing_ok=True)
         else:
             print("\n¡Interrumpido! Se guarda lo descargado; al repetir el comando continúa donde se quedó.")
-        guardar(list(vistas.values()), base=None if completo else f"ofertas_{datetime.now():%Y%m%d_%H%M}_parcial")
+        ofertas = list(vistas.values())
+        guardar(ofertas, base=None if completo else f"ofertas_{datetime.now():%Y%m%d_%H%M}_parcial")
+        registrar_descarga(ofertas, filtros, completo, inicio, len(hechas), len(areas))
 
 
 def main() -> None:

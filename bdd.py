@@ -58,7 +58,8 @@ def ahora() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 
-def conectar(ruta: Path = RUTA_BDD) -> sqlite3.Connection:
+def conectar(ruta: Path | None = None) -> sqlite3.Connection:
+    ruta = ruta or RUTA_BDD
     ruta.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(ruta)
     con.row_factory = sqlite3.Row
