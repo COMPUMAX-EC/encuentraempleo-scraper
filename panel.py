@@ -19,6 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import bdd
+import plataformas
 
 RAIZ = Path(__file__).parent
 PUERTO = 8765
@@ -38,6 +39,16 @@ PLATAFORMAS = {
         },
     },
 }
+
+# Las demás plataformas (plataformas.py): no necesitan Chrome; se actualizan una por una o todas juntas
+for _clave, (_nombre, _) in plataformas.PLATAFORMAS.items():
+    PLATAFORMAS[_nombre] = {
+        "descripcion": "Datos del buscador de BecasChamba (Get on Board, Workable, Greenhouse, Lever)." if _clave == "remotas"
+                       else "Datos que recolecta a diario el sitio de Oportunidades de Computación UPEC.",
+        "necesita_chrome": False,
+        "modos": {"actualizar": {"etiqueta": "Actualizar", "comando": ["plataformas.py", _clave], "ayuda": "Unos segundos."}},
+    }
+OTRAS = ("Todas las demás plataformas", ["plataformas.py", "todas"])
 
 # Después de actualizar, las ofertas de TI se publican en el sitio de Oportunidades (publicar_sitio.py)
 PUBLICAR = ("Publicar en la página", ["publicar_sitio.py"])
@@ -127,6 +138,14 @@ def actualizar(plataforma: str, modo: str) -> tuple[bool, str]:
     return True, "Actualización iniciada" + (": al terminar se publica en la página." if conf.get("publicar") else ".")
 
 
+def actualizar_otras() -> tuple[bool, str]:
+    with candado:
+        if en_curso():
+            return False, f"Ya hay una tarea en curso: {estado_tarea['plataforma']}."
+        iniciar(OTRAS[0], [OTRAS])
+    return True, "Actualizando todas las plataformas que no necesitan Chrome."
+
+
 def publicar() -> tuple[bool, str]:
     with candado:
         if en_curso():
@@ -207,6 +226,7 @@ class Manejador(BaseHTTPRequestHandler):
             "/api/actualizar": lambda: actualizar(datos.get("plataforma", ""), datos.get("modo", "rapido")),
             "/api/detener": detener,
             "/api/publicar": publicar,
+            "/api/actualizar-otras": actualizar_otras,
             "/api/abrir-chrome": abrir_chrome,
         }
         if self.path not in acciones:

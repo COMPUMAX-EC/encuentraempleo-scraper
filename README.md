@@ -46,6 +46,8 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre en tu 
 - la **última actualización** de cada plataforma (fecha, estado, ofertas leídas, nuevas y de TI en la base);
 - **Abrir Chrome**, para iniciar sesión en Encuentra Empleo;
 - **Actualizar** (rápido, o con requisitos), con el avance en vivo y la opción de detener;
+- **Actualizar todas** las demás plataformas (no necesitan Chrome: INEC, CNT, concursos públicos, Petroecuador,
+  CELEC, bancos y cooperativas, empresas de software y empresas remotas), o cada una con su botón;
 - **Publicar en la página** y el **historial** de actualizaciones.
 
 Al terminar cada actualización, las ofertas de TI se publican solas en la
@@ -89,6 +91,21 @@ Al terminar cada actualización, las ofertas de TI se publican solas en la
    python scraper.py clasificar salida/datos/ofertas_AAAAMMDD_HHMM.json
    ```
 
+## Otras plataformas en la misma base
+
+`plataformas.py` guarda en `salida/ofertas.db`, con su registro de actualización, las ofertas de:
+
+| Plataforma | De dónde salen |
+|---|---|
+| INEC, CNT EP, concursos públicos (Encuentra Empleo), EP Petroecuador, CELEC EP, bancos y cooperativas, empresas de software (Workable) | JSON públicos que recolecta a diario el [sitio de Oportunidades de Computación UPEC](https://github.com/Computacion-UPEC/student) |
+| Empresas remotas (Get on Board, Workable, Greenhouse, Lever) | El buscador `scripts/buscar-ofertas.mjs` de una carpeta vecina `BecasChamba` (variable `BECASCHAMBA_REPO`); si no lo tienes, esa plataforma marca error y las demás siguen |
+
+```powershell
+python plataformas.py lista      # plataformas disponibles
+python plataformas.py inec cnt   # actualiza las indicadas
+python plataformas.py todas      # actualiza todas
+```
+
 ## Publicar en una página web
 
 `publicar_sitio.py` exporta un **resumen** de las ofertas *TI directo* (cargo, empresa, ubicación, remuneración,
@@ -127,6 +144,7 @@ requests con reglas para otras áreas.
 | `excel.py` | Genera el Excel con resumen y hojas por perfil |
 | `bdd.py` | Base SQLite con todas las ofertas y el registro de actualizaciones |
 | `panel.py`, `panel.html` | Panel local con el botón de actualizar y la última actualización |
+| `plataformas.py` | Las demás plataformas de empleo, en la misma base |
 | `publicar_sitio.py` | Publica el resumen de ofertas de TI en un sitio web (PR con fusión automática) |
 | `Actualizar ofertas.bat` | Abre el panel con doble clic |
 | `abrir_chrome.ps1` | Abre Chrome con un perfil propio y el puerto de depuración 9222 |
@@ -139,7 +157,7 @@ requests con reglas para otras áreas.
 - [x] Guardar en la base automáticamente al terminar cada descarga
 - [x] Botón para actualizar con un clic
 - [x] Publicación automática en la página de Oportunidades
-- [ ] Otras plataformas en la misma base (INEC, CNT, concursos públicos, bancos, empresas de software)
+- [x] Otras plataformas en la misma base (INEC, CNT, concursos públicos, Petroecuador, CELEC, bancos, empresas de software y remotas)
 
 ## Licencia
 

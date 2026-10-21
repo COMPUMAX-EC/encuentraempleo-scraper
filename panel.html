@@ -60,6 +60,13 @@
     </div>
   </section>
 
+  <section class="card">
+    <div class="fila">
+      <div><h2>Todas las demás plataformas</h2><p class="desc">INEC, CNT, concursos públicos, Petroecuador, CELEC, bancos y cooperativas, empresas de software y empresas remotas. No necesitan Chrome: tardan menos de un minuto.</p></div>
+      <div class="botones"><button id="actualizar-otras" class="primario">Actualizar todas</button></div>
+    </div>
+  </section>
+
   <div id="plataformas"></div>
 
   <section class="card">
@@ -127,6 +134,7 @@ function pintar(d) {
   $("tarea-titulo").textContent = d.en_curso ? `Actualizando ${d.tarea.plataforma}…` : "Última ejecución";
   $("detener").disabled = !d.en_curso;
   $("publicar").disabled = d.en_curso;
+  $("actualizar-otras").disabled = d.en_curso;
   const pre = $("registro"); const abajo = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
   pre.textContent = d.registro.join("\n"); if (abajo) pre.scrollTop = pre.scrollHeight;
 
@@ -144,6 +152,7 @@ async function refrescar() {
 $("abrir-chrome").addEventListener("click", () => post("/api/abrir-chrome"));
 $("detener").addEventListener("click", () => post("/api/detener"));
 $("publicar").addEventListener("click", () => post("/api/publicar"));
+$("actualizar-otras").addEventListener("click", () => post("/api/actualizar-otras"));
 refrescar();
 </script>
 </body>
