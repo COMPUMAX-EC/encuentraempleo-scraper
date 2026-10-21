@@ -1,0 +1,112 @@
+# Encuentra Empleo Scraper
+
+Descarga las ofertas de [Encuentra Empleo](https://encuentraempleo.trabajo.gob.ec), el portal de empleo del
+Ministerio del Trabajo de Ecuador, las clasifica por sector y te dice **a cuáles puedes postular desde tu perfil**
+(pensado para profesionales de TI, pero sirve para cualquier área). Todo queda en un Excel y en una base de datos
+local con el registro de cada actualización.
+
+> Hecho en Ecuador por [Geovanny Basantes](https://github.com/COMPUMAX-EC). Uso personal y responsable: ver
+> [Uso responsable](#uso-responsable).
+
+## Qué hace
+
+- Recorre las **áreas laborales** del portal (todas o las que elijas), con filtros por provincia y palabras clave.
+- Abre cada oferta para leer sus **requisitos**: instrucción, área de estudios, experiencia, conocimientos.
+- **Clasifica por sector** (ciberseguridad, desarrollo de software y datos, soporte TI, redes, etc.) a partir del
+  contenido, porque el área declarada en el portal muchas veces no coincide.
+- Marca las ofertas de **TI directo / TI afín** y si son **postulables** desde un perfil de TI, o qué piden en su
+  lugar (ventas, contabilidad, ingeniería...).
+- Señala las ofertas de la **región amazónica** y las que exigen residencia amazónica.
+- Guarda un **Excel** (Resumen, TI directo, TI afín, Todas, Requisitos) y una **base SQLite** (`salida/ofertas.db`)
+  con cada oferta, cuándo apareció por primera vez y el **registro de actualizaciones**.
+- Si la sesión del portal caduca (dura unos 20 minutos), **reanuda** desde el área donde se quedó.
+
+## Requisitos
+
+- Windows con Google Chrome (los scripts de ayuda son para PowerShell; en Linux o macOS basta abrir Chrome con
+  `--remote-debugging-port=9222`).
+- Python 3.11 o superior.
+- Una cuenta de **aspirante** en Encuentra Empleo (es gratuita).
+
+## Instalación
+
+```powershell
+git clone https://github.com/COMPUMAX-EC/encuentraempleo-scraper.git
+cd encuentraempleo-scraper
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+## Uso
+
+1. **Abre Chrome para el scraper** (usa un perfil aparte, no toca tu Chrome normal):
+
+   ```powershell
+   .\abrir_chrome.ps1
+   ```
+
+2. En esa ventana **inicia sesión a mano** en Encuentra Empleo y entra a la búsqueda de ofertas. El scraper nunca
+   pide ni guarda tu usuario ni tu contraseña: usa la sesión que tú abres (el portal tiene verificación anti-bots).
+
+3. **Descarga las ofertas**:
+
+   ```powershell
+   python scraper.py areas                                     # lista las áreas laborales
+   python scraper.py buscar --detalle                           # todas las áreas, con requisitos
+   python scraper.py buscar --areas informatica --detalle       # solo áreas que contengan "informatica"
+   python scraper.py buscar --palabras python datos --provincia pichincha
+   ```
+
+   El resultado queda en `salida/ofertas_AAAAMMDD_HHMM.xlsx`.
+
+4. **Base de datos y última actualización**:
+
+   ```powershell
+   python bdd.py importar salida/datos/ofertas_AAAAMMDD_HHMM.json   # carga una descarga en la base
+   python bdd.py estado                                              # última actualización y conteos
+   ```
+
+5. **Reclasificar** una descarga sin volver a entrar al portal (por ejemplo, después de mejorar las reglas de
+   `sectores.py`):
+
+   ```powershell
+   python scraper.py clasificar salida/datos/ofertas_AAAAMMDD_HHMM.json
+   ```
+
+## Adapta la clasificación a tu perfil
+
+Las reglas están en [`sectores.py`](sectores.py): expresiones regulares sobre el texto normalizado (sin tildes, en
+minúsculas). Para otra profesión, cambia `SECTORES` y las funciones `perfil_ti` y `postulable_ti`. Se agradecen pull
+requests con reglas para otras áreas.
+
+## Uso responsable
+
+- Úsalo con **tu propia cuenta** y para tu búsqueda de empleo. No compartas ni publiques datos descargados que solo
+  se ven con sesión iniciada.
+- El scraper hace **pausas aleatorias** entre peticiones y entre áreas para no sobrecargar el portal; no las quites.
+- Las ofertas pertenecen al portal y a los empleadores; verifica siempre la información y postula en el sitio oficial.
+- Este proyecto no está afiliado al Ministerio del Trabajo.
+
+## Estructura
+
+| Archivo | Para qué sirve |
+|---|---|
+| `scraper.py` | Navega el portal con Playwright (conectado al Chrome abierto) y descarga las ofertas |
+| `sectores.py` | Clasificación por sector, perfil TI, postulabilidad y región amazónica |
+| `excel.py` | Genera el Excel con resumen y hojas por perfil |
+| `bdd.py` | Base SQLite con todas las ofertas y el registro de actualizaciones |
+| `abrir_chrome.ps1` | Abre Chrome con un perfil propio y el puerto de depuración 9222 |
+
+## Hoja de ruta
+
+- [x] Descarga por áreas con reanudación
+- [x] Clasificación por sector y perfil TI
+- [x] Base de datos con registro de la última actualización
+- [ ] Guardar en la base automáticamente al terminar cada descarga
+- [ ] Botón para actualizar con un clic
+- [ ] Otras plataformas en la misma base (INEC, CNT, concursos públicos, bancos, empresas de software)
+
+## Licencia
+
+[MIT](LICENSE)

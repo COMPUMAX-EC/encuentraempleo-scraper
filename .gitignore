@@ -1,0 +1,6 @@
+.env
+.venv/
+chrome-profile/
+debug/
+salida/
+__pycache__/
