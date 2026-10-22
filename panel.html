@@ -97,6 +97,13 @@
 
   <section class="card">
     <div class="fila">
+      <div><h2>Sitio de Oportunidades (GitHub)</h2><p class="desc">Corre ahora los recolectores del sitio en GitHub (INEC, concursos públicos, Petroecuador, CELEC, bancos, empresas de software y privadas), sin esperar a las 08:00 o 18:00. Solo desde este panel: usa tu sesión de GitHub (gh) de este equipo. Al terminar, el sitio se vuelve a publicar si hubo cambios y las ofertas nuevas pasan a tu base.</p></div>
+      <div class="botones"><button id="actualizar-sitio" class="primario">Actualizar el sitio ahora</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="fila">
       <div><h2>Página de Oportunidades</h2><p class="desc">Al terminar cada actualización, las ofertas de TI se publican solas en el sitio de Computación UPEC (un PR que se fusiona cuando pasa el check de Vercel). Usa este botón para publicar a mano lo que ya está en la base.</p></div>
       <div class="botones"><button id="publicar">Publicar en la página</button></div>
     </div>
@@ -211,6 +218,7 @@ function pintar(d) {
   $("tarea-titulo").textContent = d.en_curso ? `Actualizando ${d.tarea.plataforma}…` : `Última ejecución: ${d.tarea.plataforma || ""}`;
   $("detener").disabled = !d.en_curso;
   $("publicar").disabled = d.en_curso;
+  $("actualizar-sitio").disabled = d.en_curso;
   const pre = $("registro"); const abajo = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
   pre.textContent = d.registro.join("\n"); if (abajo) pre.scrollTop = pre.scrollHeight;
 
@@ -228,6 +236,7 @@ async function refrescar() {
 $("abrir-chrome").addEventListener("click", () => post("/api/abrir-chrome"));
 $("detener").addEventListener("click", () => post("/api/detener"));
 $("publicar").addEventListener("click", () => post("/api/publicar"));
+$("actualizar-sitio").addEventListener("click", () => post("/api/actualizar-sitio"));
 $("actualizar-seleccion").addEventListener("click", () => {
   if (!elegidas || !elegidas.size) return aviso("Marca al menos una plataforma.", false);
   post("/api/actualizar-seleccion", { plataformas: [...elegidas], modo: $("modo-ee").value });

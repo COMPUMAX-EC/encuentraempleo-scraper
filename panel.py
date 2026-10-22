@@ -202,6 +202,23 @@ def actualizar_otras():
     return actualizar_seleccion([n for n, c in PLATAFORMAS.items() if not c["necesita_chrome"]])
 
 
+# Fuentes que recolecta el sitio en GitHub (CNT no: su portal rechaza GitHub y se recolecta de noche en este equipo)
+FUENTES_SITIO = ["inec", "concursos", "petroecuador", "celec", "bancos", "software", "privadas"]
+
+
+def actualizar_sitio():
+    """Corre los recolectores del sitio en GitHub (con la sesión gh de este equipo) y trae lo nuevo a la base."""
+    with candado:
+        if en_curso():
+            return False, f"Ya hay una tarea en curso: {estado_tarea['plataforma']}."
+        iniciar("Sitio de Oportunidades (GitHub)", [
+            nuevo_paso("Recolectar en GitHub", "Recolectar en GitHub (sitio de Oportunidades)", ["sitio_github.py"], seguir_si_falla=False),
+            # raw.githubusercontent.com tarda unos minutos en servir el commit nuevo: si aún no aparece, «Actualizar» luego
+            nuevo_paso("Traer a la base", "Traer las ofertas nuevas a la base", ["plataformas.py", *FUENTES_SITIO], seguir_si_falla=True),
+        ])
+    return True, "Recolección pedida en GitHub: tarda unos minutos; el sitio se vuelve a publicar solo si hay cambios."
+
+
 def publicar():
     with candado:
         if en_curso():
@@ -285,6 +302,7 @@ class Manejador(BaseHTTPRequestHandler):
                                                   bool(datos.get("forzar"))),
             "/api/detener": detener,
             "/api/publicar": publicar,
+            "/api/actualizar-sitio": actualizar_sitio,
             "/api/actualizar-otras": actualizar_otras,
             "/api/actualizar-seleccion": lambda: actualizar_seleccion(list(datos.get("plataformas") or []),
                                                                       datos.get("modo", "rapido"), bool(datos.get("forzar"))),

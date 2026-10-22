@@ -51,6 +51,9 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre en tu 
   seleccionadas»; o usa el botón de cada plataforma;
 - el **avance en vivo**: barra de progreso, estado de cada plataforma (en cola, actualizando, listo, error), su
   duración y su resultado, y el registro completo;
+- **Actualizar el sitio ahora**: corre en GitHub Actions los recolectores del sitio de Oportunidades sin esperar a
+  las 08:00 o 18:00, con tu sesión de la CLI `gh` (no hace falta ningún token en el sitio), y trae lo nuevo a la base
+  (`sitio_github.py`);
 - **Publicar en la página** y el **historial** de actualizaciones.
 
 Al terminar cada actualización, las ofertas de TI se publican solas en la
@@ -156,6 +159,7 @@ requests con reglas para otras áreas.
 | `bdd.py` | Base SQLite con todas las ofertas y el registro de actualizaciones |
 | `panel.py`, `panel.html` | Panel local con el botón de actualizar y la última actualización |
 | `plataformas.py` | Las demás plataformas de empleo, en la misma base |
+| `sitio_github.py` | Corre a pedido los recolectores del sitio en GitHub Actions (con `gh`) y espera a que terminen |
 | `publicar_sitio.py` | Publica el resumen de ofertas de TI en un sitio web (PR con fusión automática) |
 | `Actualizar ofertas.bat` | Abre el panel con doble clic |
 | `abrir_chrome.ps1` | Abre Chrome con un perfil propio y el puerto de depuración 9222 |
