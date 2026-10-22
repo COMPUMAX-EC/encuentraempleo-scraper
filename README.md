@@ -104,7 +104,7 @@ Al terminar cada actualización, las ofertas de TI se publican solas en la
 
 | Plataforma | De dónde salen |
 |---|---|
-| INEC, CNT EP, concursos públicos (Encuentra Empleo), EP Petroecuador, CELEC EP, bancos y cooperativas, empresas de software (Workable) | JSON públicos que recolecta a diario el [sitio de Oportunidades de Computación UPEC](https://github.com/Computacion-UPEC/student) |
+| INEC, CNT EP, concursos públicos (Encuentra Empleo), EP Petroecuador, CELEC EP, bancos y cooperativas, empresas de software (Workable), empresas privadas grandes (Holcim, Arca Continental, Farmaenlace, Tuti) | JSON públicos que recolecta a diario el [sitio de Oportunidades de Computación UPEC](https://github.com/Computacion-UPEC/student) |
 | Empresas remotas (Get on Board, Workable, Greenhouse, Lever) | El buscador `scripts/buscar-ofertas.mjs` de una carpeta vecina `BecasChamba` (variable `BECASCHAMBA_REPO`); si no lo tienes, esa plataforma marca error y las demás siguen |
 
 ```powershell

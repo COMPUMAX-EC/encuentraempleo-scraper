@@ -89,6 +89,12 @@ def bancos() -> list[dict]:
             for j in descargar("finance-jobs.json")["jobs"]]
 
 
+def privadas() -> list[dict]:
+    return [oferta(j["id"], j["title"], j["url"], j["company"], j.get("city"), es_ti=j["isIT"],
+                   publicada=j.get("publishedAt"), cerrada=j.get("closedOn"))
+            for j in descargar("private-jobs.json")["jobs"]]
+
+
 def software() -> list[dict]:
     return [oferta(j["id"], j["title"], j["url"], j["company"], j.get("city"), es_ti=j["isIT"], cerrada=j.get("closedOn"))
             for j in descargar("tech-jobs.json")["jobs"]]
@@ -119,6 +125,7 @@ PLATAFORMAS = {
     "celec": ("CELEC EP", celec),
     "bancos": ("Bancos y cooperativas", bancos),
     "software": ("Empresas de software (Workable)", software),
+    "privadas": ("Empresas privadas grandes (Holcim, Arca, Farmaenlace, Tuti)", privadas),
     "remotas": ("Empresas remotas (Get on Board, Greenhouse, Lever)", remotas),
 }
 
