@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS actualizaciones (
 CREATE INDEX IF NOT EXISTS ofertas_ti ON ofertas (perfil_ti, postulable_ti);
 """
 
+# Inicio del mensaje de las actualizaciones incrementales de Encuentra Empleo (scraper.py nuevas)
+INCREMENTAL = "Incremental"
+
 # Columnas propias de la tabla; el resto de la oferta queda en "datos".
 COLUMNAS = ["cargo", "empresa", "ubicacion", "remuneracion", "sector", "perfil_ti", "postulable_ti", "fecha_fin", "url"]
 
@@ -119,11 +122,29 @@ def registrar(plataforma: str, ofertas: list[dict], estado: str = "ok", inicio: 
     return {"plataforma": plataforma, "total": len(ofertas), "nuevas": nuevas, "estado": estado}
 
 
-def horas_desde_ultima(plataforma: str) -> float | None:
-    """Horas desde la última actualización terminada (ok o parcial) de la plataforma; None si nunca se actualizó."""
+def codigos(plataforma: str) -> set[str]:
+    """Códigos de las ofertas de la plataforma que ya están en la base."""
     with conectar() as con:
-        fila = con.execute("""SELECT fin FROM actualizaciones WHERE plataforma = ? AND estado IN ('ok', 'parcial')
-                              AND fin IS NOT NULL ORDER BY fin DESC LIMIT 1""", (plataforma,)).fetchone()
+        return {fila[0] for fila in con.execute("SELECT codigo FROM ofertas WHERE plataforma = ?", (plataforma,))}
+
+
+def marcar_vistas(plataforma: str, codigos_vistos: set[str], momento: str | None = None) -> None:
+    """Actualiza ultima_vez de ofertas ya conocidas que se volvieron a ver, sin reescribir sus datos."""
+    momento = momento or ahora()
+    with conectar() as con:
+        con.executemany("UPDATE ofertas SET ultima_vez = ? WHERE plataforma = ? AND codigo = ?",
+                        [(momento, plataforma, c) for c in codigos_vistos])
+        con.commit()
+
+
+def horas_desde_ultima(plataforma: str, sin_incrementales: bool = False) -> float | None:
+    """Horas desde la última actualización terminada (ok o parcial) de la plataforma; None si nunca se actualizó.
+
+    sin_incrementales: no cuenta las actualizaciones incrementales (scraper.py nuevas)."""
+    filtro = f"AND COALESCE(mensaje, '') NOT LIKE '{INCREMENTAL}%'" if sin_incrementales else ""
+    with conectar() as con:
+        fila = con.execute(f"""SELECT fin FROM actualizaciones WHERE plataforma = ? AND estado IN ('ok', 'parcial')
+                               AND fin IS NOT NULL {filtro} ORDER BY fin DESC LIMIT 1""", (plataforma,)).fetchone()
     if not fila:
         return None
     return (datetime.now() - datetime.fromisoformat(fila["fin"])).total_seconds() / 3600

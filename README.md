@@ -90,7 +90,8 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre un pan
 
    ```powershell
    python scraper.py areas                                  # lista las áreas laborales
-   python scraper.py buscar                                 # todas las áreas, modo rápido
+   python scraper.py nuevas                                 # diaria: solo ofertas nuevas (unos minutos)
+   python scraper.py buscar                                 # semanal: todas las áreas, con el área declarada
    python scraper.py buscar --detalle                       # con requisitos de cada oferta
    python scraper.py buscar --areas informatica --detalle   # solo áreas que contengan "informatica"
    python scraper.py buscar --palabras python datos --provincia pichincha
@@ -104,6 +105,7 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre un pan
 
    ```powershell
    python publicas.py         # vacantes abiertas + PDF de bases -> salida/publicas_AAAAMMDD_HHMM.xlsx
+   python publicas.py vacantes  # solo las instituciones con vacantes (más rápido)
    python publicas.py excel   # rehace el Excel con lo ya descargado, sin entrar al portal
    ```
 
@@ -132,7 +134,7 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre un pan
 
 La sesión del portal caduca a los ~20 minutos. Cuando eso pasa, el scraper se detiene y guarda lo descargado. Para
 seguir, vuelve a iniciar sesión y repite el mismo comando:
-- `scraper.py` continúa desde el área donde se quedó y no vuelve a pedir los requisitos ya leídos;
+- `scraper.py buscar` continúa desde el área donde se quedó y no vuelve a pedir los requisitos ya leídos;
 - `publicas.py` no repite los PDF ya descargados.
 
 ## Publicar en una página web
@@ -163,7 +165,8 @@ otras carreras.
 - El scraper hace **pausas aleatorias largas**: 3-6 s entre peticiones, 20-40 s cada 10-20 ofertas y 15-30 s entre
   áreas. Además, **no descarga si la última descarga fue hace menos de 12 horas** (salvo con `--forzar`). El portal
   limita o bloquea temporalmente las IP con muchas peticiones: no quites estas protecciones.
-- Para el día a día usa el modo **rápido** (sin `--detalle`).
+- Para el día a día usa `scraper.py nuevas`: una sola búsqueda que se detiene al llegar a ofertas ya conocidas.
+  Una vez por semana, `scraper.py buscar` recorre todas las áreas y completa el área declarada.
 - Las ofertas pertenecen al portal y a los empleadores. Verifica siempre la información y postula en el sitio oficial.
 
 ## Estructura

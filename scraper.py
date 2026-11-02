@@ -5,7 +5,8 @@ Usa la sesión que el usuario inicia a mano en el Chrome abierto con abrir_chrom
 
 Uso:
     python scraper.py areas                                   # lista las áreas disponibles
-    python scraper.py buscar                                  # todas las áreas
+    python scraper.py nuevas                                  # diaria: solo ofertas nuevas, una búsqueda (minutos)
+    python scraper.py buscar                                  # semanal: todas las áreas (completa el área declarada)
     python scraper.py buscar --areas informática ingeniería   # áreas que contengan esos textos
     python scraper.py buscar --areas informática --palabras python datos --provincia pichincha
     python scraper.py clasificar salida/datos/ofertas_XXXX.json  # rehace el Excel de una descarga
@@ -46,6 +47,8 @@ OFERTAS_ENTRE_PAUSAS_LARGAS = (10, 20)
 PAUSA_ENTRE_AREAS = (15.0, 30.0)
 # Entre una descarga y la siguiente deben pasar al menos estas horas (se puede forzar con --forzar).
 HORAS_ENTRE_DESCARGAS = 12
+# Modo incremental (nuevas): se detiene tras estas páginas seguidas sin ninguna oferta nueva
+PAGINAS_CONOCIDAS_PARA_PARAR = 2
 
 SEL_AREA = "FormSearch:areaLaboral_input"
 SEL_PROVINCIA = "FormSearch:provincia_input"
@@ -350,12 +353,13 @@ def registrar_descarga(ofertas: list[dict], filtros: dict, completo: bool, inici
         print(f"No se pudo guardar en la base ({e}); el Excel y el JSON sí se guardaron.")
 
 
-def muy_pronto() -> str | None:
+def muy_pronto(completas: bool = False) -> str | None:
     """Aviso si la última descarga fue hace menos de HORAS_ENTRE_DESCARGAS; None si se puede descargar.
 
+    completas: solo cuentan las descargas completas por área (la semanal no se bloquea por una incremental del día).
     Reanudar una descarga interrumpida no cuenta como una nueva (eso se decide antes de llamar a esta función)."""
     try:
-        horas = bdd.horas_desde_ultima("Encuentra Empleo")
+        horas = bdd.horas_desde_ultima("Encuentra Empleo", sin_incrementales=completas)
     except Exception:  # noqa: BLE001 - sin base no se bloquea la descarga
         return None
     if horas is None or horas >= HORAS_ENTRE_DESCARGAS:
@@ -363,6 +367,62 @@ def muy_pronto() -> str | None:
     faltan = HORAS_ENTRE_DESCARGAS - horas
     return (f"La última descarga fue hace {horas:.1f} h. Para no sobrecargar el portal (bloquea temporalmente las IP "
             f"con muchas peticiones), espera {faltan:.1f} h más, o usa --forzar si de verdad lo necesitas.")
+
+
+def cmd_nuevas(page: Page, args) -> None:
+    """Actualización diaria: una sola búsqueda de todas las áreas, página por página, hasta llegar a ofertas que ya
+    están en la base (el portal ordena de la más reciente a la más antigua).
+
+    Las tarjetas no dicen el área laboral: las ofertas nuevas entran sin "Área declarada" y la corrida semanal por
+    área (`buscar`) la completa. Las ofertas ya conocidas no se reescriben, así que conservan su área."""
+    try:
+        conocidas = bdd.codigos("Encuentra Empleo")
+    except Exception:  # noqa: BLE001 - sin base no hay con qué comparar
+        conocidas = set()
+    if not conocidas:
+        sys.exit("La base no tiene ofertas de Encuentra Empleo: corre primero `python scraper.py buscar`.")
+
+    inicio = bdd.ahora()
+    cache = cargar_cache()
+    nuevas: dict[str, dict] = {}
+    vistas_conocidas: set[str] = set()
+    seguidas = n = paginas = 0
+    completo = False
+    try:
+        buscar_area(page, "-1", "-1")
+        paginas, registros = total_paginas(page), total_registros(page)
+        print(f"La web anuncia {registros} ofertas en {paginas} páginas; se para tras "
+              f"{PAGINAS_CONOCIDAS_PARA_PARAR} páginas seguidas sin ofertas nuevas.")
+        for n in range(1, paginas + 1):
+            tarjetas = cargar_pagina(page, "-1", "-1", n, ya_cargada=(n == 1), ultima=(n == paginas))
+            hay_nuevas = False
+            for i, oferta in enumerate(tarjetas):
+                if oferta["codigo"] in conocidas:
+                    vistas_conocidas.add(oferta["codigo"])
+                    continue
+                hay_nuevas = True
+                if args.detalle:
+                    oferta.update(detalle_con_reintento(page, "-1", "-1", n, i, oferta, cache))
+                oferta["area_laboral"] = ""
+                nuevas[oferta["codigo"]] = oferta
+            seguidas = 0 if hay_nuevas else seguidas + 1
+            print(f"  pág. {n}/{paginas} · {len(nuevas)} nuevas", end="\r")
+            if seguidas >= PAGINAS_CONOCIDAS_PARA_PARAR:
+                break
+        completo = True
+    finally:
+        guardar_cache(cache)
+        print(f"\nRevisadas {n} de {paginas} páginas: {len(nuevas)} ofertas nuevas.")
+        ofertas = list(nuevas.values())
+        if ofertas:
+            guardar(ofertas, base=f"ofertas_nuevas_{datetime.now():%Y%m%d_%H%M}")
+        try:
+            bdd.marcar_vistas("Encuentra Empleo", vistas_conocidas)
+            r = bdd.registrar("Encuentra Empleo", ofertas, estado="ok" if completo else "parcial", inicio=inicio,
+                              mensaje=f"{bdd.INCREMENTAL}: {n} de {paginas} páginas")
+            print(f"Base de datos: {r['nuevas']} nuevas · actualización {r['estado']} registrada")
+        except Exception as e:  # noqa: BLE001 - el Excel ya quedó en disco
+            print(f"No se pudo guardar en la base ({e}).")
 
 
 def cmd_areas(page: Page) -> None:
@@ -452,6 +512,10 @@ def main() -> None:
                         " y muchas más peticiones al portal: úsalo con moderación")
     b.add_argument("--forzar", action="store_true",
                    help=f"descarga aunque hayan pasado menos de {HORAS_ENTRE_DESCARGAS} horas desde la última")
+    nv = sub.add_parser("nuevas", help="actualización diaria rápida: solo las ofertas que no están en la base")
+    nv.add_argument("--detalle", action="store_true", help="lee también los requisitos de las ofertas nuevas")
+    nv.add_argument("--forzar", action="store_true",
+                    help=f"descarga aunque hayan pasado menos de {HORAS_ENTRE_DESCARGAS} horas desde la última")
     c =sub.add_parser("clasificar", help="reclasifica por sector un JSON ya descargado (no necesita Chrome)")
     c.add_argument("archivo", type=Path)
     args = parser.parse_args()
@@ -460,8 +524,12 @@ def main() -> None:
         guardar(json.loads(args.archivo.read_text(encoding="utf-8")), base=args.archivo.stem)
         return
 
-    if args.comando == "buscar" and not args.forzar and not PROGRESO.exists():
+    if args.comando == "nuevas" and not args.forzar:
         espera = muy_pronto()
+        if espera:
+            sys.exit(espera)
+    if args.comando == "buscar" and not args.forzar and not PROGRESO.exists():
+        espera = muy_pronto(completas=True)
         if espera:
             sys.exit(espera)
 
@@ -471,6 +539,8 @@ def main() -> None:
             page = pestana_encuentra_empleo(p)
             if args.comando == "areas":
                 cmd_areas(page)
+            elif args.comando == "nuevas":
+                cmd_nuevas(page, args)
             else:
                 cmd_buscar(page, args)
     except SesionCaducada:

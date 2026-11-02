@@ -31,6 +31,7 @@ from sectores import TI_CARGO, normalizar
 RAIZ = Path(__file__).parent
 SITIO = Path(os.environ.get("SITIO_REPO", RAIZ.parent / "student"))
 DESTINO = "lib/data/encuentra-empleo-jobs.json"
+CUENTA_GITHUB = "COMPUMAX-EC"  # cuenta de gh con permiso para publicar en el repositorio del sitio
 CONCURSOS = "lib/data/public-jobs.json"
 ESTADO = "lib/data/scrape-status.json"
 # Plataformas que solo se revisan en este computador: clave en scrape-status.json -> nombre en la base local
@@ -147,14 +148,25 @@ def escribir_sitio(datos: dict) -> None:
             ruta.write_text(nuevo, encoding="utf-8", newline="\n")
 
 
+def entorno_github() -> dict:
+    """Usa la sesión de gh de CUENTA_GITHUB (con acceso al sitio) aunque la cuenta activa sea otra; no cambia la activa."""
+    r = subprocess.run(["gh", "auth", "token", "--user", CUENTA_GITHUB], capture_output=True, text=True)
+    return {**os.environ, "GH_TOKEN": r.stdout.strip()} if r.returncode == 0 else dict(os.environ)
+
+
+ENTORNO = entorno_github()
+# git se autentica con el mismo token de gh, no con el administrador de credenciales de Windows
+GIT_CREDENCIALES = ["-c", "credential.helper=", "-c", "credential.helper=!gh auth git-credential"]
+
+
 def git(*args: str) -> str:
-    r = subprocess.run(["git", "-C", str(SITIO), *args], check=True, text=True, encoding="utf-8",
-                       capture_output=True)
+    r = subprocess.run(["git", *GIT_CREDENCIALES, "-C", str(SITIO), *args], check=True, text=True, encoding="utf-8",
+                       capture_output=True, env=ENTORNO)
     return r.stdout.strip()
 
 
 def gh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["gh", *args], cwd=SITIO, text=True, encoding="utf-8", capture_output=True)
+    return subprocess.run(["gh", *args], cwd=SITIO, text=True, encoding="utf-8", capture_output=True, env=ENTORNO)
 
 
 def publicar(datos: dict) -> str:
