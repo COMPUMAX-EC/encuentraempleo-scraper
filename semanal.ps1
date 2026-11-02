@@ -1,7 +1,8 @@
 ﻿# Corrida semanal de concursos públicos: la lanza la tarea programada "Encuentra Empleo - concursos semanal".
 # Abre el Chrome de abrir_chrome.ps1, te pide iniciar sesión (el script nunca la inicia), corre publicas.py
-# y después historial.py, que actualiza salida/frecuencia_ti.xlsx. Si la sesión caduca, te vuelve a pedir
-# iniciar sesión y continúa donde quedó (hasta 3 intentos).
+# y después historial.py, que actualiza salida/frecuencia_ti.xlsx. Luego baja las ofertas privadas por área
+# (scraper.py buscar) y publica en el sitio. Si la sesión caduca, te vuelve a pedir iniciar sesión y continúa donde
+# quedó (hasta 3 intentos).
 Set-Location $PSScriptRoot
 Add-Type -AssemblyName System.Windows.Forms
 $python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
@@ -33,6 +34,19 @@ for ($intento = 1; $intento -le 3 -and -not $completo; $intento++) {
     $texto = $salida -join "`n"
     $completo = -not ($texto -match "La sesión caducó|No hay sesión activa|No encuentro Chrome")
 }
+
+# Ofertas privadas por área (completa el "Área declarada" de las que entraron en la semana con scraper.py nuevas).
+# Tarda 25-35 min: si la sesión caduca, pide iniciar sesión otra vez y continúa desde el área donde se quedó.
+$privadas = $false
+for ($intento = 1; $intento -le 3 -and -not $privadas; $intento++) {
+    $r = Aviso ("Ofertas privadas por área (25-35 min). Si la sesión caducó, vuelve a iniciarla en Chrome y pulsa Aceptar.`n`n" +
+                "Cancelar = saltar las privadas esta semana.")
+    if ($r -ne "OK") { "Privadas saltadas por el usuario" | Out-File $log -Append -Encoding utf8; break }
+    $salida = & $python -u scraper.py buscar 2>&1 | ForEach-Object { "$_" }
+    $salida | Out-File $log -Append -Encoding utf8
+    $privadas = -not (($salida -join "`n") -match "caducó|No hay sesión activa|No encuentro Chrome|Interrumpido")
+}
+& $python -u publicar_sitio.py 2>&1 | ForEach-Object { "$_" } | Out-File $log -Append -Encoding utf8
 
 & $python -u subir_bases.py 2>&1 | ForEach-Object { "$_" } | Out-File $log -Append -Encoding utf8
 $resumen = & $python -u historial.py 2>&1 | ForEach-Object { "$_" }

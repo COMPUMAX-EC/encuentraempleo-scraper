@@ -19,15 +19,18 @@ el README.
 ## Comandos (desde esta carpeta, con `.venv/Scripts/python.exe -u`)
 | Qué | Comando | Tiempo |
 |---|---|---|
-| Ofertas privadas, modo rápido | `scraper.py buscar` | |
+| Privadas, diaria (solo nuevas, una búsqueda, para tras 2 páginas conocidas) | `scraper.py nuevas` | unos minutos |
+| Privadas por área (semanal; completa el área declarada) | `scraper.py buscar` | 25-35 min, reanuda |
 | Privadas con requisitos | `scraper.py buscar --detalle` | más de 1 h, reanuda |
 | Rehacer el Excel sin Chrome | `scraper.py clasificar salida/datos/ofertas_X.json` | segundos |
 | Concursos públicos + PDF de bases | `publicas.py` | unos 20 min (sesión de unos 20 min) |
+| Solo instituciones con vacantes (sin recorrer las 175 páginas) | `publicas.py vacantes` | unos 5 min |
 | Rehacer el Excel de públicos | `publicas.py excel` | segundos |
 | Frecuencia de vacantes TI por institución | `historial.py` (o `historial.py excel` sin registrar corrida) | segundos |
 | Corrida semanal (tarea "Encuentra Empleo - concursos semanal", lunes 9:00) | `semanal.ps1` | unos 20 min, pide iniciar sesión |
 | Estado de la base | `bdd.py estado` | |
 | Otras plataformas | `plataformas.py todas` | sin Chrome |
+| Publicar en el sitio (ofertas TI, concursos TI con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
 | Panel con botones | `panel.py` (o `Actualizar ofertas.bat`) | |
 
 Salida: `salida/*.xlsx` y `salida/ofertas.db`. Los JSON intermedios van en `salida/datos/` y los PDF

@@ -33,8 +33,10 @@ PLATAFORMAS = {
         "necesita_chrome": True,
         "publicar": True,
         "modos": {
-            "rapido": {"etiqueta": "Actualizar (rápido)", "comando": ["scraper.py", "buscar"],
-                       "ayuda": "Recomendado: solo las tarjetas de las ofertas, con pausas largas. Una vez cada 12 horas como máximo."},
+            "rapido": {"etiqueta": "Actualizar (rápido)", "comando": ["scraper.py", "nuevas"],
+                       "ayuda": "Recomendado a diario: una sola búsqueda hasta llegar a ofertas ya conocidas (unos minutos). Las nuevas entran sin área declarada hasta la corrida semanal."},
+            "por_area": {"etiqueta": "Actualizar por área (semanal)", "comando": ["scraper.py", "buscar"],
+                         "ayuda": "Recorre todas las áreas (25-35 min, reanuda si la sesión caduca) y completa el área declarada de cada oferta."},
             "completo": {"etiqueta": "Actualizar con requisitos (lento)", "comando": ["scraper.py", "buscar", "--detalle"],
                          "ayuda": "Abre cada oferta nueva para leer requisitos: muchas más peticiones al portal. Úsalo poco; reanuda si la sesión caduca."},
         },
