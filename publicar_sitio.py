@@ -2,8 +2,10 @@
 
 Lee la base local (salida/ofertas.db), arma un resumen de las ofertas "TI directo" (cargo, empresa, ubicación,
 remuneración, cierre y sector; los requisitos completos quedan solo en tu base) y lo escribe en
-lib/data/encuentra-empleo-jobs.json del repositorio del sitio. Si cambió, abre un PR y lo fusiona cuando pasa
-el check de Vercel: el sitio se actualiza solo en unos minutos.
+lib/data/encuentra-empleo-jobs.json del repositorio del sitio. También agrega al historial de concursos públicos
+(lib/data/public-jobs.json) las vacantes de TI que bajó publicas.py, con el enlace a sus bases, y registra en
+lib/data/scrape-status.json el día de la última revisión de las plataformas locales. Si algo cambió, abre un PR y
+lo fusiona cuando pasa el check de Vercel: el sitio se actualiza solo en unos minutos.
 
 Uso:
     python publicar_sitio.py               # exporta y publica (PR + fusión automática)
@@ -23,10 +25,16 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import bdd
+from publicas import AREA_TI, BASES, BASES_GITHUB, REGISTRO
+from sectores import TI_CARGO, normalizar
 
 RAIZ = Path(__file__).parent
 SITIO = Path(os.environ.get("SITIO_REPO", RAIZ.parent / "student"))
 DESTINO = "lib/data/encuentra-empleo-jobs.json"
+CONCURSOS = "lib/data/public-jobs.json"
+ESTADO = "lib/data/scrape-status.json"
+# Plataformas que solo se revisan en este computador: clave en scrape-status.json -> nombre en la base local
+LOCALES = {"Encuentra-Empleo": "Encuentra Empleo", "Remotas": "Empresas remotas (Get on Board, Greenhouse, Lever)"}
 PORTAL = "https://encuentraempleo.trabajo.gob.ec/socioEmpleo-war/paginas/index.jsf"
 DIAS_HISTORIAL = 90  # ofertas vistas en este plazo
 MESES = {"ene": 1, "feb": 2, "mar": 3, "abr": 4, "may": 5, "jun": 6, "jul": 7, "ago": 8, "sep": 9, "sept": 9,
@@ -73,6 +81,72 @@ def exportar() -> dict:
     return {"source": PORTAL, "updatedAt": ultima["fin"] if ultima else None, "jobs": trabajos}
 
 
+def json_sitio(datos: dict) -> str:
+    """Mismo formato que JSON.stringify(datos, null, 2) de los recolectores del sitio."""
+    return json.dumps(datos, ensure_ascii=False, indent=2) + "\n"
+
+
+def exportar_concursos(actual: dict) -> dict:
+    """Agrega al historial de concursos del sitio las vacantes de TI de publicas.json, con el enlace a sus bases.
+
+    Entra el cargo de TI por su título (como en el sitio) y también el que no lo es pero cuyas bases aceptan una
+    carrera de TI (acceptsIT). El resto de vacantes se queda solo en la base local."""
+    trabajos = {t["id"]: t for t in actual.get("jobs", [])}
+    for v in json.loads(REGISTRO.read_text(encoding="utf-8")).values():
+        es_ti = bool(re.search(TI_CARGO, normalizar(v["puesto"])))
+        acepta = bool(re.search(AREA_TI, normalizar(v.get("area_conocimiento", ""))))
+        if not (es_ti or acepta):
+            continue
+        visto = v.get("primera_vez") or v["cierre"][:10]
+        nuevo = {
+            "id": v["codigo"], "institution": v["institucion"], "title": v["puesto"],
+            "vacancies": int(v["vacantes"]) if str(v["vacantes"]).isdigit() else 1,
+            "salary": float(v["rmu"]) if v.get("rmu") else None, "city": v.get("ubicacion") or "",
+            "stage": v.get("etapa") or "", "opensAt": None,
+            "closesAt": v["cierre"][:16].replace(" ", "T") + ":00-05:00" if v.get("cierre") else None,
+            "isIT": es_ti, "firstSeen": visto, "lastSeen": visto,
+            **trabajos.get(v["codigo"], {}),  # lo que ya vio el recolector del sitio manda (apertura, isIT, fechas)
+        }
+        if acepta and not nuevo["isIT"]:
+            nuevo["acceptsIT"] = True
+        if v.get("archivo_bases") and (BASES / v["archivo_bases"]).exists():
+            nuevo["basesUrl"] = BASES_GITHUB + v["archivo_bases"]
+        trabajos[v["codigo"]] = nuevo
+    return {**actual, "jobs": sorted(trabajos.values(), key=lambda t: t.get("closesAt") or "", reverse=True)}
+
+
+def exportar_estado(actual: dict) -> dict:
+    """Día de la última revisión de las plataformas que solo corren en este computador."""
+    plataformas = dict(actual.get("platforms", {}))
+    with bdd.conectar() as con:
+        for clave, nombre in LOCALES.items():
+            fila = con.execute("SELECT fin, estado FROM actualizaciones WHERE plataforma = ? ORDER BY id DESC LIMIT 1",
+                               (nombre,)).fetchone()
+            if fila:
+                ok = fila["estado"] in ("ok", "parcial")
+                dia = fila["fin"][:10]
+                plataformas[clave] = {"lastRun": dia, "lastSuccess": dia if ok else plataformas.get(clave, {}).get("lastSuccess"),
+                                      "ok": ok}
+    if REGISTRO.exists():  # publicas.py guarda el registro al terminar cada página
+        dia = datetime.fromtimestamp(REGISTRO.stat().st_mtime).strftime("%Y-%m-%d")
+        plataformas["Encuentra-Empleo-bases"] = {"lastRun": dia, "lastSuccess": dia, "ok": True}
+    return {"platforms": dict(sorted(plataformas.items()))}
+
+
+def escribir_sitio(datos: dict) -> None:
+    """Escribe en el sitio las ofertas privadas de TI, el historial de concursos de TI y el estado de las plataformas."""
+    ruta = SITIO / DESTINO
+    # updatedAt cambia en cada corrida: solo se reescribe si cambiaron las ofertas
+    if not ruta.exists() or json.loads(ruta.read_text(encoding="utf-8")).get("jobs") != datos["jobs"]:
+        ruta.write_text(json_sitio(datos), encoding="utf-8", newline="\n")
+    for archivo, exportar_archivo in ((CONCURSOS, exportar_concursos), (ESTADO, exportar_estado)):
+        ruta = SITIO / archivo
+        actual = json.loads(ruta.read_text(encoding="utf-8")) if ruta.exists() else {}
+        nuevo = json_sitio(exportar_archivo(actual))
+        if not ruta.exists() or ruta.read_text(encoding="utf-8").replace("\r\n", "\n") != nuevo:
+            ruta.write_text(nuevo, encoding="utf-8", newline="\n")
+
+
 def git(*args: str) -> str:
     r = subprocess.run(["git", "-C", str(SITIO), *args], check=True, text=True, encoding="utf-8",
                        capture_output=True)
@@ -92,17 +166,13 @@ def publicar(datos: dict) -> str:
     try:
         git("checkout", "-q", "main")
         git("pull", "-q", "--ff-only")
-        ruta = SITIO / DESTINO
-        nuevo = json.dumps(datos, ensure_ascii=False, indent=2) + "\n"
-        anterior = ruta.read_text(encoding="utf-8") if ruta.exists() else ""
-        # updatedAt cambia en cada corrida: solo se publica si cambiaron las ofertas
-        if anterior and json.loads(anterior).get("jobs") == datos["jobs"]:
+        escribir_sitio(datos)
+        if not git("status", "--porcelain"):
             return "Sin ofertas nuevas ni cambios: no hace falta publicar."
-        ruta.write_text(nuevo, encoding="utf-8", newline="\n")
         sello = datetime.now().strftime("%Y-%m-%d-%H%M")
         rama = f"data/encuentra-empleo-{sello}"
         git("checkout", "-q", "-b", rama)
-        git("add", DESTINO)
+        git("add", DESTINO, CONCURSOS, ESTADO)
         git("commit", "-q", "-m", f"Update Encuentra Empleo IT jobs ({sello})")
         git("push", "-q", "-u", "origin", rama)
         r = gh("pr", "create", "--base", "main", "--head", rama, "--title", f"Update Encuentra Empleo IT jobs ({sello})",
@@ -143,8 +213,8 @@ def main() -> None:
     abiertas = sum(1 for t in datos["jobs"] if t["closesOn"] and t["closesOn"] >= date.today().isoformat())
     print(f"{len(datos['jobs'])} ofertas de TI ({abiertas} abiertas) · última actualización {datos['updatedAt']}")
     if args.solo_exportar:
-        (SITIO / DESTINO).write_text(json.dumps(datos, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-        print(f"Escrito {SITIO / DESTINO}")
+        escribir_sitio(datos)
+        print(f"Escritos {DESTINO}, {CONCURSOS} y {ESTADO} en {SITIO}")
         return
     try:
         print(publicar(datos))
