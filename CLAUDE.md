@@ -30,6 +30,7 @@ el README.
 | Corrida semanal (tarea "Encuentra Empleo - concursos semanal", lunes 9:00) | `semanal.ps1` | unos 20 min, pide iniciar sesión |
 | Estado de la base | `bdd.py estado` | |
 | Otras plataformas | `plataformas.py todas` | sin Chrome |
+| Portales con navegador real o cuenta (El Rosado, CACPECO/Laburo) | `portales_navegador.py` | 1 min, sesión en El Rosado |
 | Publicar en el sitio (ofertas TI, concursos TI con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
 | Panel con botones | `panel.py` (o `Actualizar ofertas.bat`) | |
 

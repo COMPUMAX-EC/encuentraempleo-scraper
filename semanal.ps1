@@ -46,6 +46,7 @@ for ($intento = 1; $intento -le 3 -and -not $privadas; $intento++) {
     $salida | Out-File $log -Append -Encoding utf8
     $privadas = -not (($salida -join "`n") -match "caducó|No hay sesión activa|No encuentro Chrome|Interrumpido")
 }
+& $python -u portales_navegador.py 2>&1 | ForEach-Object { "$_" } | Out-File $log -Append -Encoding utf8
 & $python -u publicar_sitio.py 2>&1 | ForEach-Object { "$_" } | Out-File $log -Append -Encoding utf8
 
 & $python -u subir_bases.py 2>&1 | ForEach-Object { "$_" } | Out-File $log -Append -Encoding utf8
