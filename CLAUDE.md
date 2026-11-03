@@ -31,7 +31,7 @@ el README.
 | Estado de la base | `bdd.py estado` | |
 | Otras plataformas | `plataformas.py todas` | sin Chrome |
 | Portales con navegador real o cuenta (El Rosado, CACPECO/Laburo) | `portales_navegador.py` | 1 min, sesión en El Rosado |
-| Publicar en el sitio (ofertas TI, concursos TI con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
+| Publicar en el sitio (ofertas TI y de entrada, concursos TI y de entrada con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
 | Panel con botones | `panel.py` (o `Actualizar ofertas.bat`) | |
 
 Salida: `salida/*.xlsx` y `salida/ofertas.db`. Los JSON intermedios van en `salida/datos/` y los PDF
