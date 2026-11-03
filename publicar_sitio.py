@@ -1,9 +1,10 @@
 """Publica en el sitio de Oportunidades de Computación UPEC las ofertas de TI de Encuentra Empleo.
 
-Lee la base local (salida/ofertas.db), arma un resumen de las ofertas "TI directo" (cargo, empresa, ubicación,
+Lee la base local (salida/ofertas.db), arma un resumen de las ofertas "TI directo" y de los cargos de entrada de
+cualquier área (asistentes, auxiliares, pasantes: sección Para recién graduados) (cargo, empresa, ubicación,
 remuneración, cierre y sector; los requisitos completos quedan solo en tu base) y lo escribe en
 lib/data/encuentra-empleo-jobs.json del repositorio del sitio. También agrega al historial de concursos públicos
-(lib/data/public-jobs.json) las vacantes de TI que bajó publicas.py, con el enlace a sus bases, y registra en
+(lib/data/public-jobs.json) las vacantes de TI y las de entrada que bajó publicas.py, con el enlace a sus bases, y registra en
 lib/data/scrape-status.json el día de la última revisión de las plataformas locales. Si algo cambió, abre un PR y
 lo fusiona cuando pasa el check de Vercel: el sitio se actualiza solo en unos minutos.
 
@@ -40,6 +41,13 @@ PORTALES = ("lib/data/private-jobs.json", "lib/data/finance-jobs.json")
 LOCALES = {"Encuentra-Empleo": "Encuentra Empleo", "Remotas": "Empresas remotas (Get on Board, Greenhouse, Lever)"}
 PORTAL = "https://encuentraempleo.trabajo.gob.ec/socioEmpleo-war/paginas/index.jsf"
 DIAS_HISTORIAL = 90  # ofertas vistas en este plazo
+# Cargo de entrada (para recién graduados): mismo criterio que scripts/lib/entry-roles.mjs del sitio
+CARGO_ENTRADA = re.compile(r"\bauxiliar(es)?\b|\basistentes?\b|\bayudantes?\b|\bpasant(e|es|[ií]as?)\b|\bpracticantes?\b|"
+                           r"pr[aá]cticas (pre)?profesionales|\btrainees?\b|\bjunior\b|\bjr\b|\baprendiz|\bbecari[oa]s?\b|"
+                           r"reci[eé]n graduad|sin experiencia|primer empleo|servidor(a)? p[uú]blic[oa] de apoyo|"
+                           r"\brecepcionistas?\b|\bcajer[oa]s?\b|\bdigitador(es|a)?\b|\bnotificador(es|a)?\b", re.I)
+SENIOR = re.compile(r"\b(senior|sr)\b", re.I)
+MESES_ENTRADA = 12  # concursos cuyas bases piden hasta un año de experiencia
 MESES = {"ene": 1, "feb": 2, "mar": 3, "abr": 4, "may": 5, "jun": 6, "jul": 7, "ago": 8, "sep": 9, "sept": 9,
          "oct": 10, "nov": 11, "dic": 12}
 
@@ -52,19 +60,33 @@ def fecha_iso(texto: str | None) -> str | None:
     return date(int(m.group(3)), MESES[m.group(2)], int(m.group(1))).isoformat()
 
 
+def es_entrada(cargo: str | None) -> bool:
+    return bool(cargo) and bool(CARGO_ENTRADA.search(cargo)) and not SENIOR.search(cargo)
+
+
+def meses_experiencia(texto: str | None) -> int | None:
+    """"2 años 6 meses" (de las bases) -> 30."""
+    m = re.match(r"(\d+) a\S+ (\d+) meses", texto or "")
+    return int(m.group(1)) * 12 + int(m.group(2)) if m else None
+
+
 def exportar() -> dict:
     limite = (datetime.now() - timedelta(days=DIAS_HISTORIAL)).isoformat(timespec="seconds")
     with bdd.conectar() as con:
         filas = con.execute("""
             SELECT codigo, datos, primera_vez, ultima_vez FROM ofertas
-            -- Solo "TI directo": "TI afín" incluye ventas y atención al cliente que no son roles de TI
-            WHERE plataforma = 'Encuentra Empleo' AND ultima_vez >= ? AND perfil_ti = 'TI directo'
+            -- "TI directo" ("TI afín" incluye ventas y atención al cliente que no son roles de TI) y, aparte,
+            -- los cargos de entrada de cualquier área, para la sección Para recién graduados
+            WHERE plataforma = 'Encuentra Empleo' AND ultima_vez >= ?
             """, (limite,)).fetchall()
         ultima = con.execute("""SELECT fin FROM actualizaciones WHERE plataforma = 'Encuentra Empleo'
                                 AND estado IN ('ok', 'parcial') ORDER BY id DESC LIMIT 1""").fetchone()
     trabajos = []
     for f in filas:
         o = json.loads(f["datos"])
+        entrada = es_entrada(o.get("cargo"))
+        if o.get("perfil_ti") != "TI directo" and not entrada:
+            continue
         trabajos.append({
             "id": f["codigo"],
             "title": o.get("cargo"),
@@ -76,6 +98,7 @@ def exportar() -> dict:
             "sector": o.get("sector") or None,
             "profile": o.get("perfil_ti"),
             "applicableFromIT": o.get("postulable_ti") == "Sí",
+            **({"entryLevel": True} if entrada else {}),
             "closesOn": fecha_iso(o.get("fecha_fin")),
             "firstSeen": f["primera_vez"][:10],
             "lastSeen": f["ultima_vez"][:10],
@@ -92,13 +115,16 @@ def json_sitio(datos: dict) -> str:
 def exportar_concursos(actual: dict) -> dict:
     """Agrega al historial de concursos del sitio las vacantes de TI de publicas.json, con el enlace a sus bases.
 
-    Entra el cargo de TI por su título (como en el sitio) y también el que no lo es pero cuyas bases aceptan una
-    carrera de TI (acceptsIT). El resto de vacantes se queda solo en la base local."""
+    Entra el cargo de TI por su título (como en el sitio), el que no lo es pero cuyas bases aceptan una carrera de TI
+    (acceptsIT) y el de entrada (asistente, auxiliar... o que pide hasta un año de experiencia), para la sección Para
+    recién graduados. El resto de vacantes se queda solo en la base local."""
     trabajos = {t["id"]: t for t in actual.get("jobs", [])}
     for v in json.loads(REGISTRO.read_text(encoding="utf-8")).values():
         es_ti = bool(re.search(TI_CARGO, normalizar(v["puesto"])))
         acepta = bool(re.search(AREA_TI, normalizar(v.get("area_conocimiento", ""))))
-        if not (es_ti or acepta):
+        meses = meses_experiencia(v.get("experiencia_bases"))
+        entrada = es_entrada(v["puesto"]) or (meses is not None and meses <= MESES_ENTRADA)
+        if not (es_ti or acepta or entrada):
             continue
         visto = v.get("primera_vez") or v["cierre"][:10]
         nuevo = {
@@ -112,6 +138,10 @@ def exportar_concursos(actual: dict) -> dict:
         }
         if acepta and not nuevo["isIT"]:
             nuevo["acceptsIT"] = True
+        if entrada:
+            nuevo["entryLevel"] = True
+        if meses is not None:
+            nuevo["minExperienceMonths"] = meses
         if v.get("archivo_bases") and (BASES / v["archivo_bases"]).exists():
             nuevo["basesUrl"] = BASES_GITHUB + v["archivo_bases"]
         trabajos[v["codigo"]] = nuevo
@@ -225,7 +255,9 @@ def main() -> None:
     args = parser.parse_args()
     datos = exportar()
     abiertas = sum(1 for t in datos["jobs"] if t["closesOn"] and t["closesOn"] >= date.today().isoformat())
-    print(f"{len(datos['jobs'])} ofertas de TI ({abiertas} abiertas) · última actualización {datos['updatedAt']}")
+    de_ti = sum(t["profile"] == "TI directo" for t in datos["jobs"])
+    print(f"{len(datos['jobs'])} ofertas ({de_ti} de TI, {len(datos['jobs']) - de_ti} solo de entrada; {abiertas} abiertas)"
+          f" · última actualización {datos['updatedAt']}")
     if args.solo_exportar:
         escribir_sitio(datos)
         print(f"Escritos {DESTINO}, {CONCURSOS} y {ESTADO} en {SITIO}")

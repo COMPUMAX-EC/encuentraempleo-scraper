@@ -31,8 +31,8 @@ el README.
 | Estado de la base | `bdd.py estado` | |
 | Otras plataformas | `plataformas.py todas` | sin Chrome |
 | Portales con navegador real o cuenta (El Rosado, CACPECO/Laburo) | `portales_navegador.py` | 1 min, sesión en El Rosado |
-| Solo CACPECO con un Chrome propio (lo corre el runner de COMPUMAX-EC/oportunidades-runner a las 08:20 y 18:20) | `portales_navegador.py --fuente cacpeco --chrome-propio` | segundos, abre una ventana |
-| Publicar en el sitio (ofertas TI, concursos TI con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
+| Solo CACPECO con un Chrome propio (Laburo solo carga con la ventana al frente: a pedido o en semanal.ps1) | `portales_navegador.py --fuente cacpeco --chrome-propio` | segundos, abre una ventana |
+| Publicar en el sitio (ofertas TI y de entrada, concursos TI y de entrada con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
 | Panel con botones | `panel.py` (o `Actualizar ofertas.bat`) | |
 
 Salida: `salida/*.xlsx` y `salida/ofertas.db`. Los JSON intermedios van en `salida/datos/` y los PDF

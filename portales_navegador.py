@@ -13,8 +13,8 @@ postula. Después, publicar_sitio.py sube los cambios en un PR.
 Uso:  python portales_navegador.py
       python portales_navegador.py --fuente cacpeco --chrome-propio
           Solo CACPECO, en un Chrome que abre el script (una ventana unos segundos: Laburo no responde a un navegador
-          invisible). Lo corre el runner de COMPUMAX-EC/oportunidades-runner dos veces al día, sin que haga falta abrir
-          abrir_chrome.ps1. El Rosado necesita la sesión del usuario y sigue yendo por el puerto 9222.
+          invisible, y solo carga si la ventana queda al frente). No hace falta abrir abrir_chrome.ps1. El Rosado
+          necesita la sesión del usuario y sigue yendo por el puerto 9222.
 """
 
 import argparse
