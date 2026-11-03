@@ -135,8 +135,12 @@ def main() -> None:
     resultados = {}
     with sync_playwright() as p:
         if args.chrome_propio:
-            navegador = p.chromium.launch(channel="chrome", headless=False)
+            # Si la ventana queda detrás de otras, Chrome frena la página y Laburo no llega a pedir las vacantes
+            navegador = p.chromium.launch(channel="chrome", headless=False, args=[
+                "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding",
+                "--disable-background-timer-throttling"])
             page = navegador.new_page(locale="es-EC")
+            page.bring_to_front()
         else:
             try:
                 navegador = p.chromium.connect_over_cdp(CDP)
