@@ -11,8 +11,13 @@ Usa el Chrome de abrir_chrome.ps1 (puerto 9222) con las sesiones que inició el 
 postula. Después, publicar_sitio.py sube los cambios en un PR.
 
 Uso:  python portales_navegador.py
+      python portales_navegador.py --fuente cacpeco --chrome-propio
+          Solo CACPECO, en un Chrome que abre el script (una ventana unos segundos: Laburo no responde a un navegador
+          invisible). Lo corre el runner de COMPUMAX-EC/oportunidades-runner dos veces al día, sin que haga falta abrir
+          abrir_chrome.ps1. El Rosado necesita la sesión del usuario y sigue yendo por el puerto 9222.
 """
 
+import argparse
 import json
 import re
 import sys
@@ -120,15 +125,26 @@ def registrar_estado(resultados: dict[str, bool]) -> None:
 
 def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--fuente", choices=[f["id"] for f in FUENTES], action="append",
+                        help="solo esta fuente (se puede repetir); por defecto, todas")
+    parser.add_argument("--chrome-propio", action="store_true",
+                        help="abre su propio Chrome en vez de usar el de abrir_chrome.ps1 (sin sesiones iniciadas)")
+    args = parser.parse_args()
+    fuentes = [f for f in FUENTES if not args.fuente or f["id"] in args.fuente]
     resultados = {}
     with sync_playwright() as p:
+        if args.chrome_propio:
+            navegador = p.chromium.launch(channel="chrome", headless=False)
+            page = navegador.new_page(locale="es-EC")
+        else:
+            try:
+                navegador = p.chromium.connect_over_cdp(CDP)
+            except Exception:  # noqa: BLE001
+                sys.exit("No encuentro el Chrome del scraper en el puerto 9222: ábrelo con abrir_chrome.ps1.")
+            page = navegador.contexts[0].new_page()
         try:
-            navegador = p.chromium.connect_over_cdp(CDP)
-        except Exception:  # noqa: BLE001
-            sys.exit("No encuentro el Chrome del scraper en el puerto 9222: ábrelo con abrir_chrome.ps1.")
-        page = navegador.contexts[0].new_page()
-        try:
-            for fuente in FUENTES:
+            for fuente in fuentes:
                 try:
                     encontradas = fuente["leer"](page)
                 except Exception as e:  # noqa: BLE001 - si una fuente falla no se cierra ninguna de sus ofertas
@@ -141,7 +157,10 @@ def main() -> None:
                 print(f"{fuente['nombre']}: {len(encontradas)} vacantes ({de_ti} de TI)")
         finally:
             page.close()
+            if args.chrome_propio:
+                navegador.close()
     registrar_estado(resultados)
+    sys.exit(0 if all(resultados.values()) else 1)
 
 
 if __name__ == "__main__":
