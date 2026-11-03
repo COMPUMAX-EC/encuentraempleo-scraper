@@ -34,6 +34,8 @@ DESTINO = "lib/data/encuentra-empleo-jobs.json"
 CUENTA_GITHUB = "COMPUMAX-EC"  # cuenta de gh con permiso para publicar en el repositorio del sitio
 CONCURSOS = "lib/data/public-jobs.json"
 ESTADO = "lib/data/scrape-status.json"
+# Los escribe portales_navegador.py (El Rosado, CACPECO): se publican junto con lo demás
+PORTALES = ("lib/data/private-jobs.json", "lib/data/finance-jobs.json")
 # Plataformas que solo se revisan en este computador: clave en scrape-status.json -> nombre en la base local
 LOCALES = {"Encuentra-Empleo": "Encuentra Empleo", "Remotas": "Empresas remotas (Get on Board, Greenhouse, Lever)"}
 PORTAL = "https://encuentraempleo.trabajo.gob.ec/socioEmpleo-war/paginas/index.jsf"
@@ -184,7 +186,7 @@ def publicar(datos: dict) -> str:
         sello = datetime.now().strftime("%Y-%m-%d-%H%M")
         rama = f"data/encuentra-empleo-{sello}"
         git("checkout", "-q", "-b", rama)
-        git("add", DESTINO, CONCURSOS, ESTADO)
+        git("add", DESTINO, CONCURSOS, ESTADO, *PORTALES)
         git("commit", "-q", "-m", f"Update Encuentra Empleo IT jobs ({sello})")
         git("push", "-q", "-u", "origin", rama)
         r = gh("pr", "create", "--base", "main", "--head", rama, "--title", f"Update Encuentra Empleo IT jobs ({sello})",
