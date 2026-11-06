@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Sector objetivo** | Estadística y planificación · estadística del mercado laboral (INEC, ENEMDU) |
-| **Segmento** | A |
-| **Esfuerzo asignado** | 7 % del tiempo de proyectos (dentro del 10 % de estadística y planificación) |
+| **Segmento** | A (único segmento del plan) |
+| **Esfuerzo asignado** | 14 % del tiempo de proyectos (dentro del 20 % de estadística y planificación) |
 | **Horizonte** | 9-nov-2026 → 31-ene-2027 |
 
 ## Para quién se diseña
