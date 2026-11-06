@@ -30,12 +30,15 @@ el README.
 | Corrida semanal (tarea "Encuentra Empleo - concursos semanal", lunes 9:00) | `semanal.ps1` | unos 20 min, pide iniciar sesión |
 | Estado de la base | `bdd.py estado` | |
 | Otras plataformas | `plataformas.py todas` | sin Chrome |
+| Corrida diaria de otras plataformas (tarea "Encuentra Empleo - plataformas diaria", 20:30; log en `salida/datos/log_diaria.txt`) | `diaria.cmd` | unos 5 min |
+| Serie diaria desde el historial de git del sitio (`../student`) y de BecasChamba → tabla `observaciones` | `historico.py` (o `--desde AAAA-MM-DD`) | segundos, no duplica |
 | Portales con navegador real o cuenta (El Rosado, CACPECO/Laburo) | `portales_navegador.py` | 1 min, sesión en El Rosado |
 | Solo CACPECO con un Chrome propio (Laburo solo carga con la ventana al frente: a pedido o en semanal.ps1) | `portales_navegador.py --fuente cacpeco --chrome-propio` | segundos, abre una ventana |
 | Publicar en el sitio (ofertas TI y de entrada, concursos TI y de entrada con bases, estado de plataformas) | `publicar_sitio.py` | PR + fusión |
 | Panel con botones | `panel.py` (o `Actualizar ofertas.bat`) | |
 
-Salida: `salida/*.xlsx` y `salida/ofertas.db`. Los JSON intermedios van en `salida/datos/` y los PDF
+Salida: `salida/*.xlsx` y `salida/ofertas.db` (tablas `ofertas`, `observaciones` = una fila por oferta y día
+publicada, y `actualizaciones`). Los JSON intermedios van en `salida/datos/` y los PDF
 de bases en `salida/bases/`.
 
 ## Particularidades del sitio (JSF / PrimeFaces 6.2)

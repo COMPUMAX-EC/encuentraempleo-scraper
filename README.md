@@ -130,6 +130,22 @@ Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre un pan
    usan el buscador de la carpeta vecina `BecasChamba` (variable `BECASCHAMBA_REPO`); sin ella, esa plataforma
    marca error y las demás siguen.
 
+7. **Serie histórica diaria** (tabla `observaciones` de `salida/ofertas.db`: una fila por oferta y día en que
+   estuvo publicada):
+
+   ```powershell
+   python historico.py                     # carga todo el historial disponible (se puede repetir, no duplica)
+   python historico.py --desde 2026-10-16
+   ```
+
+   El sitio de Oportunidades recolecta a diario y solo hace commit de cada JSON cuando cambian sus ofertas, así
+   que las ofertas publicadas un día son las del último commit hasta ese día. `historico.py` recorre ese
+   historial (carpeta vecina `student`, variable `STUDENT_REPO`) y el de `fuentes/candidatas.json` de BecasChamba
+   (solo los días con commit). Desde ahí en adelante, la tarea programada **"Encuentra Empleo - plataformas
+   diaria"** corre `diaria.cmd` (`plataformas.py todas`) todos los días a las 20:30, o al encender el PC si
+   estaba apagado, y deja el registro en `salida/datos/log_diaria.txt`. Encuentra Empleo no entra en la serie
+   diaria porque exige iniciar sesión: sus observaciones salen de cada corrida a mano o semanal.
+
 ## Sesión de 20 minutos y reanudación
 
 La sesión del portal caduca a los ~20 minutos. Cuando eso pasa, el scraper se detiene y guarda lo descargado. Para
@@ -177,8 +193,10 @@ otras carreras.
 | `publicas.py` | Concursos públicos: vacantes abiertas y PDF de las bases del concurso |
 | `sectores.py` | Clasificación por sector, perfil TI, postulabilidad y región amazónica |
 | `excel.py` | Excel de ofertas privadas con resumen y hojas por perfil |
-| `bdd.py` | Base SQLite con todas las ofertas y el registro de actualizaciones |
+| `bdd.py` | Base SQLite con todas las ofertas, la serie diaria (`observaciones`) y el registro de actualizaciones |
 | `plataformas.py` | Otras plataformas de empleo en la misma base |
+| `historico.py` | Carga la serie diaria desde el historial de git del sitio de Oportunidades y de BecasChamba |
+| `diaria.cmd` | Corrida diaria de `plataformas.py todas` (tarea programada, 20:30) |
 | `panel.py`, `panel.html` | Panel local con botones y avance en vivo |
 | `sitio_github.py` | Corre a pedido los recolectores del sitio en GitHub Actions (con `gh`) |
 | `publicar_sitio.py` | Publica el resumen de ofertas de TI en un sitio web |
