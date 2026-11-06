@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| **Sector objetivo** | Estado central · datos de empleo y estadística laboral |
+| **Sector objetivo** | Estadística y planificación · estadística del mercado laboral (INEC, ENEMDU) |
 | **Segmento** | A |
-| **Esfuerzo asignado** | 10 % del tiempo de proyectos (dentro del 15 % de Estado central) |
+| **Esfuerzo asignado** | 7 % del tiempo de proyectos (dentro del 10 % de estadística y planificación) |
 | **Horizonte** | 9-nov-2026 → 31-ene-2027 |
 
 ## Para quién se diseña
 
-Instituciones de estadística y política laboral, y personas que buscan empleo en Ecuador.
+Áreas de estadística y análisis de datos (INEC, Secretaría de Planificación) que miden empleo y vacantes, y personas que buscan empleo en Ecuador.
 
 ## Metas
 
