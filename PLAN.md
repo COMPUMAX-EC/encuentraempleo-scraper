@@ -4,7 +4,7 @@
 |---|---|
 | **Sector objetivo** | Estadística y planificación · estadística del mercado laboral (INEC, ENEMDU) |
 | **Segmento** | A (único segmento del plan) |
-| **Esfuerzo asignado** | 14 % del tiempo de proyectos (dentro del 20 % de estadística y planificación) |
+| **Esfuerzo asignado** | 8 % del tiempo de proyectos (dentro del 20 % de estadística y planificación; el artículo, en mercado-ti-ecuador, tiene otro 6 %) |
 | **Horizonte** | 9-nov-2026 → 31-ene-2027 |
 
 ## Para quién se diseña
@@ -22,7 +22,7 @@
 - [ ] Hacer el merge o cerrar el PR #1 (feat/publicas-semanal)
 
 **Hasta 31-ene-2027**
-- [ ] Informe mensual del mercado laboral TI publicado en el sitio de la UPEC
+- [ ] Datos mensuales listos para el artículo de COMPUMAX-EC/mercado-ti-ecuador
 
 ## Fuera de alcance
 
