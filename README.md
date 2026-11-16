@@ -1,63 +1,65 @@
 # Encuentra Empleo Ecuador Scraper
 
-**Scraper de ofertas de empleo de [Encuentra Empleo](https://encuentraempleo.trabajo.gob.ec)**, el portal de empleo
-del Ministerio del Trabajo de Ecuador. Descarga las **ofertas privadas** y los **concursos públicos de méritos y
-oposición** (con el PDF de las **bases del concurso**), las clasifica por sector y te dice **a cuáles puedes
-postular desde tu perfil**. Está pensado para profesionales de TI, pero las reglas se adaptan a cualquier carrera.
+🇬🇧 **English** · 🇪🇨 [Español](README.es.md)
 
-Todo queda en **Excel** y en una **base de datos SQLite** local con el registro de cada actualización.
+**Job-listing scraper for [Encuentra Empleo](https://encuentraempleo.trabajo.gob.ec)**, the job portal of Ecuador's
+Ministry of Labour. It downloads **private-sector listings** and **public merit-based competitions** (with the PDF of
+the **competition rules**, *bases del concurso*), classifies them by sector and tells you **which ones you can apply
+to with your profile**. It is designed for IT professionals, but the rules can be adapted to any field.
 
-> Hecho en Ecuador por [Geovanny Basantes](https://github.com/COMPUMAX-EC). Úsalo de forma personal y responsable:
-> ver [Uso responsable](#uso-responsable). No está afiliado al Ministerio del Trabajo.
+Everything ends up in **Excel** and in a local **SQLite database** with a record of every update.
 
-## ¿Por qué?
+> Made in Ecuador by [Geovanny Basantes](https://github.com/COMPUMAX-EC). Use it personally and responsibly: see
+> [Responsible use](#responsible-use). It is not affiliated with the Ministry of Labour.
 
-Buscar trabajo en Encuentra Empleo a mano es lento. Las ofertas se ven de 5 en 5, el **área laboral declarada
-muchas veces no coincide** con el puesto (hay ofertas de soporte técnico publicadas en "Administración"), y los
-requisitos solo aparecen al abrir cada oferta. Para los concursos públicos hay que entrar institución por
-institución y descargar las bases una a una. Esta herramienta lo hace por ti y te deja un Excel filtrable.
+## Why?
 
-## Qué hace
+Searching Encuentra Empleo by hand is slow. Listings are shown 5 at a time, the **declared job area often does not
+match** the position (there are tech-support listings filed under "Administration"), and the requirements only appear
+when you open each listing. For public competitions you have to go institution by institution and download the rules
+one by one. This tool does it for you and leaves you a filterable Excel file.
 
-**Ofertas privadas** (`scraper.py`)
-- Recorre todas las **áreas laborales** del portal, o las que elijas, con filtros por provincia y palabras clave.
-- Abre cada oferta y lee sus **requisitos**: instrucción, área de estudios, experiencia, conocimientos del cargo,
-  tipo de contrato, jornada, vacantes y fechas de publicación y cierre.
-- **Clasifica por sector** a partir del contenido de la oferta, no del área declarada. Hay 26 sectores:
-  ciberseguridad, desarrollo de software y datos, soporte TI, redes y telecomunicaciones, salud, educación,
-  contabilidad, construcción, petróleo y minería, entre otros.
-- Marca las ofertas **TI directo** y **TI afín**, y si son **postulables desde TI** según el área de estudios que exigen.
-- Señala la **región amazónica** y las ofertas que **exigen residencia amazónica** (Ley Amazónica).
+## What it does
 
-**Concursos públicos** (`publicas.py`)
-- Recorre las ~1400 instituciones públicas y encuentra las que tienen **vacantes abiertas** en postulación.
-- Descarga el **PDF de las bases del concurso** de cada vacante a `salida/bases/`.
-- Lee del PDF el **área del conocimiento**, la instrucción y la experiencia que exige el puesto, y marca las
-  vacantes **postulables desde TI**.
-- Genera un Excel con la fecha de cierre, la RMU, la institución, el contacto y un enlace a cada PDF.
+**Private listings** (`scraper.py`)
+- Walks every **job area** on the portal, or the ones you choose, with filters by province and keywords.
+- Opens each listing and reads its **requirements**: education, field of study, experience, job knowledge, contract
+  type, working hours, number of openings, and publication and closing dates.
+- **Classifies by sector** from the listing's content, not the declared area. There are 26 sectors: cybersecurity,
+  software development and data, IT support, networks and telecom, health, education, accounting, construction, oil
+  and mining, among others.
+- Flags **direct IT** and **IT-related** listings, and whether they are **open to IT graduates** based on the field
+  of study they require.
+- Marks the **Amazon region** and listings that **require Amazon residency** (Amazon Law).
 
-**Otras plataformas** (`plataformas.py`)
-- INEC, CNT EP, EP Petroecuador, CELEC EP, bancos y cooperativas, empresas de software y remotas, y grandes
-  empresas privadas, en la misma base de datos.
+**Public competitions** (`publicas.py`)
+- Walks the ~1,400 public institutions and finds those with **open vacancies** accepting applications.
+- Downloads the **competition-rules PDF** for each vacancy to `salida/bases/`.
+- Reads from the PDF the **field of knowledge**, education and experience the position requires, and flags vacancies
+  **open to IT graduates**.
+- Produces an Excel file with closing date, monthly salary (RMU), institution, contact and a link to each PDF.
 
-**Panel local** (`panel.py`)
-- Un botón para actualizar, el avance en vivo, la última actualización de cada plataforma y la publicación de las
-  ofertas de TI en una página web.
+**Other platforms** (`plataformas.py`)
+- INEC, CNT EP, EP Petroecuador, CELEC EP, banks and cooperatives, software and remote companies, and large private
+  companies, in the same database.
 
-## Cómo funciona
+**Local dashboard** (`panel.py`)
+- One button to update, live progress, the last update of each platform and publishing the IT listings to a web page.
 
-El portal exige una **cuenta de aspirante** y tiene una verificación anti-bots (Cloudflare Turnstile), así que la
-herramienta **no inicia sesión ni guarda tu contraseña**. Abres un Chrome aparte, inicias sesión tú, y los scripts
-usan esa sesión con [Playwright](https://playwright.dev/python/) (`connect_over_cdp`). Nunca pulsan "Aplicar": solo
-leen ofertas y descargan las bases.
+## How it works
 
-## Requisitos
+The portal requires a **job-seeker account** and has an anti-bot check (Cloudflare Turnstile), so the tool **does not
+log in or store your password**. You open a separate Chrome, log in yourself, and the scripts use that session with
+[Playwright](https://playwright.dev/python/) (`connect_over_cdp`). They never click "Apply": they only read listings
+and download the rules.
 
-- Windows con Google Chrome. En Linux o macOS basta con abrir Chrome con `--remote-debugging-port=9222`.
-- Python 3.11 o superior.
-- Una cuenta de aspirante en Encuentra Empleo (gratuita).
+## Requirements
 
-## Instalación
+- Windows with Google Chrome. On Linux or macOS, just open Chrome with `--remote-debugging-port=9222`.
+- Python 3.11 or later.
+- A job-seeker account on Encuentra Empleo (free).
+
+## Installation
 
 ```powershell
 git clone https://github.com/COMPUMAX-EC/encuentraempleo-ecuador-scraper.git
@@ -67,136 +69,138 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Uso rápido: el panel
+## Quick start: the dashboard
 
-Doble clic en **`Actualizar ofertas.bat`** (o `python panel.py`). Se abre un panel local en
-`http://127.0.0.1:8765`, accesible solo desde tu computador. Desde ahí puedes:
-- abrir Chrome para iniciar sesión;
-- actualizar en modo rápido o con requisitos, con avance en vivo y la opción de detener;
-- elegir qué plataformas actualizar;
-- ver el historial de actualizaciones y publicar las ofertas de TI en la página web.
+Double-click **`Actualizar ofertas.bat`** (or run `python panel.py`). A local dashboard opens at
+`http://127.0.0.1:8765`, reachable only from your computer. From there you can:
+- open Chrome to log in;
+- update in quick mode or with requirements, with live progress and a stop option;
+- choose which platforms to update;
+- see the update history and publish the IT listings to the web page.
 
-## Uso por comandos
+## Command-line use
 
-1. **Abre Chrome para el scraper**. Usa un perfil aparte y no toca tu Chrome normal:
+1. **Open Chrome for the scraper.** It uses a separate profile and does not touch your normal Chrome:
 
    ```powershell
    .\abrir_chrome.ps1
    ```
 
-2. En esa ventana **inicia sesión a mano** en Encuentra Empleo.
+2. In that window **log in by hand** to Encuentra Empleo.
 
-3. **Ofertas privadas**:
+3. **Private listings**:
 
    ```powershell
-   python scraper.py areas                                  # lista las áreas laborales
-   python scraper.py nuevas                                 # diaria: solo ofertas nuevas (unos minutos)
-   python scraper.py buscar                                 # semanal: todas las áreas, con el área declarada
-   python scraper.py buscar --detalle                       # con requisitos de cada oferta
-   python scraper.py buscar --areas informatica --detalle   # solo áreas que contengan "informatica"
+   python scraper.py areas                                  # list the job areas
+   python scraper.py nuevas                                 # daily: new listings only (a few minutes)
+   python scraper.py buscar                                 # weekly: all areas, with the declared area
+   python scraper.py buscar --detalle                       # with each listing's requirements
+   python scraper.py buscar --areas informatica --detalle   # only areas containing "informatica"
    python scraper.py buscar --palabras python datos --provincia pichincha
-   python scraper.py buscar --forzar                        # aunque la última descarga sea de hace menos de 12 h
+   python scraper.py buscar --forzar                        # even if the last download is less than 12 h old
    ```
 
-   Resultado: `salida/ofertas_AAAAMMDD_HHMM.xlsx`, con las hojas Resumen, Postulables desde TI,
-   TI - revisar requisitos, Todas y Requisitos por sector. Además, la base `salida/ofertas.db`.
+   Output: `salida/ofertas_YYYYMMDD_HHMM.xlsx`, with the sheets Resumen, Postulables desde TI,
+   TI - revisar requisitos, Todas and Requisitos por sector. Plus the database `salida/ofertas.db`.
 
-4. **Concursos públicos y bases del concurso**:
+4. **Public competitions and their rules**:
 
    ```powershell
-   python publicas.py         # vacantes abiertas + PDF de bases -> salida/publicas_AAAAMMDD_HHMM.xlsx
-   python publicas.py vacantes  # solo las instituciones con vacantes (más rápido)
-   python publicas.py excel   # rehace el Excel con lo ya descargado, sin entrar al portal
+   python publicas.py           # open vacancies + rules PDF -> salida/publicas_YYYYMMDD_HHMM.xlsx
+   python publicas.py vacantes  # only institutions with vacancies (faster)
+   python publicas.py excel     # rebuild the Excel from what is already downloaded, without visiting the portal
    ```
 
-5. **Base de datos y reclasificación**, sin volver a entrar al portal:
+5. **Database and reclassification**, without going back to the portal:
 
    ```powershell
-   python bdd.py estado                                             # última actualización y conteos
-   python bdd.py importar salida/datos/ofertas_AAAAMMDD_HHMM.json   # carga una descarga anterior
-   python scraper.py clasificar salida/datos/ofertas_AAAAMMDD_HHMM.json   # tras cambiar sectores.py
+   python bdd.py estado                                             # last update and counts
+   python bdd.py importar salida/datos/ofertas_YYYYMMDD_HHMM.json   # load an earlier download
+   python scraper.py clasificar salida/datos/ofertas_YYYYMMDD_HHMM.json   # after changing sectores.py
    ```
 
-6. **Otras plataformas** (no necesitan Chrome):
+6. **Other platforms** (no Chrome needed):
 
    ```powershell
-   python plataformas.py lista      # plataformas disponibles
-   python plataformas.py inec cnt   # actualiza las indicadas
+   python plataformas.py lista      # available platforms
+   python plataformas.py inec cnt   # update the ones listed
    python plataformas.py todas
    ```
 
-   Salen de los JSON públicos que recolecta a diario el
-   [sitio de Oportunidades de Computación UPEC](https://github.com/Computacion-UPEC/student). Las empresas remotas
-   usan el buscador de la carpeta vecina `BecasChamba` (variable `BECASCHAMBA_REPO`); sin ella, esa plataforma
-   marca error y las demás siguen.
+   They come from the public JSON files collected daily by the
+   [Computación UPEC Opportunities site](https://github.com/Computacion-UPEC/student). Remote companies use the
+   search tool in the sibling folder `BecasChamba` (variable `BECASCHAMBA_REPO`); without it, that platform reports an
+   error and the others continue.
 
-## Sesión de 20 minutos y reanudación
+## 20-minute session and resuming
 
-La sesión del portal caduca a los ~20 minutos. Cuando eso pasa, el scraper se detiene y guarda lo descargado. Para
-seguir, vuelve a iniciar sesión y repite el mismo comando:
-- `scraper.py buscar` continúa desde el área donde se quedó y no vuelve a pedir los requisitos ya leídos;
-- `publicas.py` no repite los PDF ya descargados.
+The portal session expires after ~20 minutes. When that happens, the scraper stops and saves what it downloaded. To
+continue, log in again and repeat the same command:
+- `scraper.py buscar` continues from the area where it stopped and does not re-request requirements already read;
+- `publicas.py` does not repeat PDFs already downloaded.
 
-## Publicar en una página web
+## Publishing to a web page
 
-`publicar_sitio.py` exporta un **resumen** de las ofertas TI directo (cargo, empresa, ubicación, remuneración,
-cierre, sector y código) al JSON `lib/data/encuentra-empleo-jobs.json` de un repositorio de Next.js. Después abre un
-pull request y lo fusiona cuando pasa el check de Vercel. Si las ofertas no cambiaron, no hace nada. Los requisitos
-completos se quedan en tu base.
+`publicar_sitio.py` exports a **summary** of the direct-IT listings (position, company, location, salary, closing
+date, sector and code) to the JSON file `lib/data/encuentra-empleo-jobs.json` in a Next.js repository. Then it opens a
+pull request and merges it when the Vercel check passes. If the listings did not change, it does nothing. The full
+requirements stay in your database.
 
 ```powershell
-python publicar_sitio.py                  # exporta y publica (necesita git y la CLI de GitHub, gh)
-python publicar_sitio.py --solo-exportar  # solo escribe el JSON
+python publicar_sitio.py                  # export and publish (needs git and the GitHub CLI, gh)
+python publicar_sitio.py --solo-exportar  # only write the JSON
 ```
 
-El repositorio del sitio se indica con la variable `SITIO_REPO` (por defecto `../student`).
+The site repository is set with the `SITIO_REPO` variable (default `../student`).
 
-## Adapta la clasificación a tu carrera
+## Adapt the classification to your field
 
-Las reglas están en [`sectores.py`](sectores.py). Son expresiones regulares sobre el texto normalizado, sin tildes
-y en minúsculas. Para otra profesión, cambia `SECTORES` y las funciones `perfil_ti` y `postulable_ti`. Para los
-concursos públicos, cambia `AREA_TI` en [`publicas.py`](publicas.py). Se agradecen pull requests con reglas para
-otras carreras.
+The rules are in [`sectores.py`](sectores.py). They are regular expressions over normalized text, without accents
+and in lowercase (so the patterns match Spanish text). For another profession, change `SECTORES` and the functions
+`perfil_ti` and `postulable_ti`. For public competitions, change `AREA_TI` in [`publicas.py`](publicas.py). Pull
+requests with rules for other fields are welcome.
 
-## Uso responsable
+## Responsible use
 
-- Úsalo con **tu propia cuenta** y para tu búsqueda de empleo. Si publicas ofertas, publica solo un resumen con el
-  código y envía a la gente a postular en el portal oficial.
-- El scraper hace **pausas aleatorias largas**: 3-6 s entre peticiones, 20-40 s cada 10-20 ofertas y 15-30 s entre
-  áreas. Además, **no descarga si la última descarga fue hace menos de 12 horas** (salvo con `--forzar`). El portal
-  limita o bloquea temporalmente las IP con muchas peticiones: no quites estas protecciones.
-- Para el día a día usa `scraper.py nuevas`: una sola búsqueda que se detiene al llegar a ofertas ya conocidas.
-  Una vez por semana, `scraper.py buscar` recorre todas las áreas y completa el área declarada.
-- Las ofertas pertenecen al portal y a los empleadores. Verifica siempre la información y postula en el sitio oficial.
+- Use it with **your own account** and for your own job search. If you publish listings, publish only a summary with
+  the code and send people to apply on the official portal.
+- The scraper takes **long random pauses**: 3–6 s between requests, 20–40 s every 10–20 listings and 15–30 s between
+  areas. It also **does not download if the last download was less than 12 hours ago** (unless `--forzar`). The
+  portal throttles or temporarily blocks IPs with many requests: do not remove these protections.
+- Day to day, use `scraper.py nuevas`: a single search that stops when it reaches listings it already knows. Once a
+  week, `scraper.py buscar` walks every area and fills in the declared area.
+- The listings belong to the portal and the employers. Always verify the information and apply on the official site.
 
-## Estructura
+## Structure
 
-| Archivo | Para qué sirve |
+| File | Purpose |
 |---|---|
-| `scraper.py` | Ofertas privadas: navega el portal con Playwright conectado a tu Chrome |
-| `publicas.py` | Concursos públicos: vacantes abiertas y PDF de las bases del concurso |
-| `sectores.py` | Clasificación por sector, perfil TI, postulabilidad y región amazónica |
-| `excel.py` | Excel de ofertas privadas con resumen y hojas por perfil |
-| `bdd.py` | Base SQLite con todas las ofertas y el registro de actualizaciones |
-| `plataformas.py` | Otras plataformas de empleo en la misma base |
-| `panel.py`, `panel.html` | Panel local con botones y avance en vivo |
-| `sitio_github.py` | Corre a pedido los recolectores del sitio en GitHub Actions (con `gh`) |
-| `publicar_sitio.py` | Publica el resumen de ofertas de TI en un sitio web |
-| `abrir_chrome.ps1` | Abre Chrome con un perfil propio y el puerto de depuración 9222 |
-| `Actualizar ofertas.bat` | Abre el panel con doble clic |
-| `CLAUDE.md` | Notas técnicas del portal para trabajar con Claude Code sin volver a explorarlo |
+| `scraper.py` | Private listings: browses the portal with Playwright connected to your Chrome |
+| `publicas.py` | Public competitions: open vacancies and the competition-rules PDF |
+| `sectores.py` | Sector classification, IT profile, eligibility and Amazon region |
+| `excel.py` | Private-listings Excel with a summary and per-profile sheets |
+| `bdd.py` | SQLite database with every listing and the update log |
+| `plataformas.py` | Other job platforms in the same database |
+| `panel.py`, `panel.html` | Local dashboard with buttons and live progress |
+| `sitio_github.py` | Runs the site's collectors on GitHub Actions on demand (with `gh`) |
+| `publicar_sitio.py` | Publishes the IT-listings summary to a website |
+| `abrir_chrome.ps1` | Opens Chrome with its own profile and debugging port 9222 |
+| `Actualizar ofertas.bat` | Opens the dashboard with a double-click |
+| `CLAUDE.md` | Technical notes on the portal for working with Claude Code without re-exploring it |
 
-## Hoja de ruta
+Script, command and output names are in Spanish, matching the portal.
 
-- [x] Ofertas privadas por área, con reanudación
-- [x] Clasificación por sector y perfil TI
-- [x] Base de datos con el registro de actualizaciones
-- [x] Panel con un botón para actualizar
-- [x] Publicación automática en la página de Oportunidades
-- [x] Otras plataformas en la misma base
-- [x] Concursos públicos con descarga de las bases del concurso
-- [ ] Avisos de ofertas nuevas de TI
+## Roadmap
 
-## Licencia
+- [x] Private listings by area, with resume
+- [x] Classification by sector and IT profile
+- [x] Database with the update log
+- [x] Dashboard with an update button
+- [x] Automatic publishing to the Opportunities page
+- [x] Other platforms in the same database
+- [x] Public competitions with download of the competition rules
+- [ ] Alerts for new IT listings
+
+## License
 
 [MIT](LICENSE)

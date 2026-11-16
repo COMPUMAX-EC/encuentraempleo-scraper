@@ -1,32 +1,32 @@
-# Plan del proyecto
+# Project plan
 
 | | |
 |---|---|
-| **Sector objetivo** | Estadística y planificación · estadística del mercado laboral (INEC, ENEMDU) |
-| **Segmento** | A (único segmento del plan) |
-| **Esfuerzo asignado** | 8 % del tiempo de proyectos (dentro del 20 % de estadística y planificación; el artículo, en mercado-ti-ecuador, tiene otro 6 %) |
-| **Horizonte** | 9-nov-2026 → 31-ene-2027 |
+| **Target sector** | Statistics and planning · labour-market statistics (INEC, ENEMDU) |
+| **Segment** | A (the plan's only segment) |
+| **Allocated effort** | 8% of project time (within the 20% for statistics and planning; the article, in mercado-ti-ecuador, has another 6%) |
+| **Horizon** | 9 Nov 2026 → 31 Jan 2027 |
 
-## Para quién se diseña
+## Who it is designed for
 
-Áreas de estadística y análisis de datos (INEC, Secretaría de Planificación) que miden empleo y vacantes, y personas que buscan empleo en Ecuador.
+Statistics and data-analysis teams (INEC, the Planning Secretariat) that measure employment and vacancies, and people looking for work in Ecuador.
 
-## Metas
+## Goals
 
-**Hasta 30-nov-2026**
-- [ ] Actualización semanal estable con registro en la base y sin fallos 4 semanas seguidas
-- [ ] Indicadores de vacantes por sector, provincia y nivel en el Excel
+**By 30 Nov 2026**
+- [ ] Stable weekly update, logged in the database, with no failures for 4 weeks in a row
+- [ ] Vacancy indicators by sector, province and level in the Excel file
 
-**Hasta 31-dic-2026**
-- [ ] Serie histórica de vacantes TI por sector (ya hay datos desde oct-2026) con gráfico
-- [ ] Hacer el merge o cerrar el PR #1 (feat/publicas-semanal)
+**By 31 Dec 2026**
+- [ ] Historical series of IT vacancies by sector (data available since Oct 2026) with a chart
+- [ ] Merge or close PR #1 (feat/publicas-semanal)
 
-**Hasta 31-ene-2027**
-- [ ] Datos mensuales listos para el artículo de COMPUMAX-EC/mercado-ti-ecuador
+**By 31 Jan 2027**
+- [ ] Monthly data ready for the COMPUMAX-EC/mercado-ti-ecuador article
 
-## Fuera de alcance
+## Out of scope
 
-Uso masivo o comercial de datos del portal; respetar el uso responsable del README.
+Mass or commercial use of the portal's data; respect the responsible-use section of the README.
 
 ---
-Revisión cada domingo: avance de metas y horas dedicadas. Plan general de sectores en COMPUMAX-EC/red-contactos-ti (privado).
+Reviewed every Sunday: progress on goals and hours spent. Overall sector plan in COMPUMAX-EC/red-contactos-ti (private).
