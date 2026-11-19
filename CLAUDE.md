@@ -29,12 +29,15 @@ professional can apply to. **Do not explore the site again**: everything needed 
 | Weekly run (task "Encuentra Empleo - concursos semanal", Monday 9:00) | `semanal.ps1` | about 20 min, asks you to log in |
 | Database status | `bdd.py estado` | |
 | Other platforms | `plataformas.py todas` | no Chrome |
+| Daily run of the other platforms (task "Encuentra Empleo - plataformas diaria", 20:30; log in `salida/datos/log_diaria.txt`) | `diaria.cmd` | about 5 min |
+| Daily series from the git history of the site (`../student`) and BecasChamba → `observaciones` table | `historico.py` (or `--desde YYYY-MM-DD`) | seconds, no duplicates |
 | Portals needing a real browser or account (El Rosado, CACPECO/Laburo) | `portales_navegador.py` | 1 min, El Rosado session |
 | CACPECO only with its own Chrome (Laburo only loads with the window in front: on demand or in semanal.ps1) | `portales_navegador.py --fuente cacpeco --chrome-propio` | seconds, opens a window |
 | Publish to the site (IT and entry-level listings, IT and entry-level competitions with rules, platform status) | `publicar_sitio.py` | PR + merge |
 | Dashboard with buttons | `panel.py` (or `Actualizar ofertas.bat`) | |
 
-Output: `salida/*.xlsx` and `salida/ofertas.db`. Intermediate JSON goes in `salida/datos/` and the rules PDFs in
+Output: `salida/*.xlsx` and `salida/ofertas.db` (tables `ofertas`, `observaciones` = one row per listing and day
+it was published, and `actualizaciones`). Intermediate JSON goes in `salida/datos/` and the rules PDFs in
 `salida/bases/`.
 
 ## Site quirks (JSF / PrimeFaces 6.2)

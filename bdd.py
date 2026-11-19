@@ -1,7 +1,8 @@
 """Base de datos local de ofertas laborales de todas las plataformas (SQLite: salida/ofertas.db).
 
-Dos tablas:
+Tres tablas:
   - ofertas: una fila por oferta y plataforma, con su primera y última vez vista.
+  - observaciones: una fila por oferta y día en que estuvo publicada (la serie histórica).
   - actualizaciones: el registro de cada actualización (plataforma, inicio, fin, estado, totales).
 
 Uso:
@@ -48,6 +49,12 @@ CREATE TABLE IF NOT EXISTS actualizaciones (
     mensaje     TEXT
 );
 CREATE INDEX IF NOT EXISTS ofertas_ti ON ofertas (perfil_ti, postulable_ti);
+CREATE TABLE IF NOT EXISTS observaciones (
+    plataforma  TEXT NOT NULL,
+    codigo      TEXT NOT NULL,
+    fecha       TEXT NOT NULL,       -- AAAA-MM-DD: la oferta estaba publicada ese día
+    PRIMARY KEY (plataforma, codigo, fecha)
+);
 """
 
 # Inicio del mensaje de las actualizaciones incrementales de Encuentra Empleo (scraper.py nuevas)
@@ -78,11 +85,21 @@ def iniciar_actualizacion(con: sqlite3.Connection, plataforma: str, inicio: str 
     return cur.lastrowid
 
 
+def observar(con: sqlite3.Connection, plataforma: str, codigos_vistos, momento: str) -> None:
+    """Anota que esas ofertas estaban publicadas el día de `momento`."""
+    con.executemany("INSERT OR IGNORE INTO observaciones (plataforma, codigo, fecha) VALUES (?, ?, ?)",
+                    [(plataforma, str(c), momento[:10]) for c in codigos_vistos])
+
+
 def guardar_ofertas(con: sqlite3.Connection, plataforma: str, ofertas: list[dict], momento: str | None = None) -> int:
-    """Inserta o actualiza las ofertas; devuelve cuántas eran nuevas."""
+    """Inserta o actualiza las ofertas; devuelve cuántas eran nuevas.
+
+    Acepta descargas en cualquier orden (por ejemplo, al cargar el histórico): primera_vez y ultima_vez se quedan
+    con la fecha menor y la mayor, y los datos solo se reemplazan con una descarga igual o más reciente."""
     momento = momento or ahora()
     existentes = {fila[0] for fila in con.execute("SELECT codigo FROM ofertas WHERE plataforma = ?", (plataforma,))}
     nuevas = 0
+    reciente = "excluded.ultima_vez >= ofertas.ultima_vez"
     for o in ofertas:
         codigo = str(o["codigo"])
         nuevas += codigo not in existentes
@@ -91,10 +108,12 @@ def guardar_ofertas(con: sqlite3.Connection, plataforma: str, ofertas: list[dict
             INSERT INTO ofertas (plataforma, codigo, {', '.join(COLUMNAS)}, datos, primera_vez, ultima_vez)
             VALUES (?, ?, {', '.join('?' * len(COLUMNAS))}, ?, ?, ?)
             ON CONFLICT (plataforma, codigo) DO UPDATE SET
-                {', '.join(f'{c} = excluded.{c}' for c in COLUMNAS)},
-                datos = excluded.datos,
-                ultima_vez = excluded.ultima_vez
+                {', '.join(f'{c} = CASE WHEN {reciente} THEN excluded.{c} ELSE ofertas.{c} END' for c in COLUMNAS)},
+                datos = CASE WHEN {reciente} THEN excluded.datos ELSE ofertas.datos END,
+                primera_vez = MIN(ofertas.primera_vez, excluded.primera_vez),
+                ultima_vez = MAX(ofertas.ultima_vez, excluded.ultima_vez)
             """, [plataforma, codigo, *valores, json.dumps(o, ensure_ascii=False), momento, momento])
+    observar(con, plataforma, (o["codigo"] for o in ofertas), momento)
     con.commit()
     return nuevas
 
@@ -132,8 +151,9 @@ def marcar_vistas(plataforma: str, codigos_vistos: set[str], momento: str | None
     """Actualiza ultima_vez de ofertas ya conocidas que se volvieron a ver, sin reescribir sus datos."""
     momento = momento or ahora()
     with conectar() as con:
-        con.executemany("UPDATE ofertas SET ultima_vez = ? WHERE plataforma = ? AND codigo = ?",
+        con.executemany("UPDATE ofertas SET ultima_vez = MAX(ultima_vez, ?) WHERE plataforma = ? AND codigo = ?",
                         [(momento, plataforma, c) for c in codigos_vistos])
+        observar(con, plataforma, codigos_vistos, momento)
         con.commit()
 
 

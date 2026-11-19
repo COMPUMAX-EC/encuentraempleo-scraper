@@ -132,6 +132,22 @@ Double-click **`Actualizar ofertas.bat`** (or run `python panel.py`). A local da
    search tool in the sibling folder `BecasChamba` (variable `BECASCHAMBA_REPO`); without it, that platform reports an
    error and the others continue.
 
+7. **Daily history series** (`observaciones` table in `salida/ofertas.db`: one row per listing and day it was
+   published):
+
+   ```powershell
+   python historico.py                     # loads all available history (safe to repeat, no duplicates)
+   python historico.py --desde 2026-10-16
+   ```
+
+   The Opportunities site collects every day and only commits each JSON when its listings change, so the listings
+   published on a given day are those of the last commit up to that day. `historico.py` walks that history
+   (sibling folder `student`, variable `STUDENT_REPO`) and the history of BecasChamba's `fuentes/candidatas.json`
+   (only days with a commit). From then on, the scheduled task **"Encuentra Empleo - plataformas diaria"** runs
+   `diaria.cmd` (`plataformas.py todas`) every day at 20:30, or when the PC starts if it was off, and logs to
+   `salida/datos/log_diaria.txt`. Encuentra Empleo is not in the daily series because it requires logging in: its
+   observations come from each manual or weekly run.
+
 ## 20-minute session and resuming
 
 The portal session expires after ~20 minutes. When that happens, the scraper stops and saves what it downloaded. To
@@ -179,7 +195,9 @@ requests with rules for other fields are welcome.
 | `publicas.py` | Public competitions: open vacancies and the competition-rules PDF |
 | `sectores.py` | Sector classification, IT profile, eligibility and Amazon region |
 | `excel.py` | Private-listings Excel with a summary and per-profile sheets |
-| `bdd.py` | SQLite database with every listing and the update log |
+| `bdd.py` | SQLite database with every listing, the daily series (`observaciones`) and the update log |
+| `historico.py` | Loads the daily series from the git history of the Opportunities site and BecasChamba |
+| `diaria.cmd` | Daily run of `plataformas.py todas` (scheduled task, 20:30) |
 | `plataformas.py` | Other job platforms in the same database |
 | `panel.py`, `panel.html` | Local dashboard with buttons and live progress |
 | `sitio_github.py` | Runs the site's collectors on GitHub Actions on demand (with `gh`) |
