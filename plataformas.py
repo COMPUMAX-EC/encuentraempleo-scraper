@@ -28,7 +28,13 @@ DATOS_SITIO = "https://raw.githubusercontent.com/Computacion-UPEC/student/main/l
 BECASCHAMBA = Path(os.environ.get("BECASCHAMBA_REPO", RAIZ.parent / "BecasChamba"))
 
 
+# historico.py lo reemplaza para leer copias antiguas del mismo JSON desde el historial de git del sitio.
+LECTOR = None
+
+
 def descargar(archivo: str) -> dict:
+    if LECTOR:
+        return LECTOR(archivo)
     req = urllib.request.Request(DATOS_SITIO + archivo, headers={"User-Agent": "encuentraempleo-scraper"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
@@ -111,6 +117,10 @@ def remotas() -> list[dict]:
     if r.returncode:
         raise RuntimeError(r.stderr.strip() or "El buscador de BecasChamba falló.")
     datos = json.loads((BECASCHAMBA / "fuentes" / "candidatas.json").read_text(encoding="utf-8"))
+    return remotas_de(datos)
+
+
+def remotas_de(datos: dict) -> list[dict]:
     # El buscador ya filtra roles de TI publicados en los últimos 60 días
     return [oferta(j["id"], j["title"], j.get("url"), j.get("company") or j["source"], j.get("location"),
                    j.get("salary"), es_ti=True, sector=j["source"], publicada=j.get("publishedAt"))
